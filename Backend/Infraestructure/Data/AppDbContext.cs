@@ -23,6 +23,7 @@ namespace Infraestructure.Data
             modelBuilder.ApplyConfiguration(new EventConfiguration());
             modelBuilder.ApplyConfiguration(new SectorConfiguration());
             modelBuilder.ApplyConfiguration(new SeatConfiguration());
+            modelBuilder.ApplyConfiguration(new UserConfiguration());
 
             // Configuración de precisión para decimales (Importante para Price)
             modelBuilder.Entity<Sector>()
