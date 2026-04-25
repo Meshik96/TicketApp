@@ -1,6 +1,8 @@
 using Application.DTOs.Reservations;
 using Application.Interfaces.Services;
+using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace API.Controllers
 {
@@ -11,15 +13,18 @@ namespace API.Controllers
         private readonly IEventService _eventService;
         private readonly ISeatService _seatService;
         private readonly IReservationService _reservationService;
+        private readonly IUserService _userService;
 
         public TicketController(
             IEventService eventService,
             ISeatService seatService,
-            IReservationService reservationService)
+            IReservationService reservationService,
+            IUserService userService)
         {
             _eventService = eventService;
             _seatService = seatService;
             _reservationService = reservationService;
+            _userService = userService;
         }
 
         /// <summary>
@@ -90,5 +95,44 @@ namespace API.Controllers
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
             }
         }
+
+
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _userService.GetAllAsync();
+            return Ok(users);
+        }
+
+        [HttpGet("users/{id}")]
+        public async Task<IActionResult> GetUserById(int id)
+        {
+            var user = await _userService.GetByIdAsync(id);
+
+            if (user == null)
+                return NotFound();
+
+            return Ok(user);
+        }
+
+        [HttpPost("users")]
+        public async Task<IActionResult> CreateUser([FromBody] User user)
+        {
+            var created = await _userService.CreateAsync(user);
+            return Ok(created);
+        }
+
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] User user)
+        {
+            var result = await _userService.UpdateAsync(id, user);
+
+            if (!result)
+                return NotFound();
+
+            return NoContent();
+        }
+
+
     }
 }
