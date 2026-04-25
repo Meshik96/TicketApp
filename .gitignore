@@ -364,3 +364,4 @@ FodyWeavers.xsd
 /Backend/Infraestructure/Migrations/
 
 /Backend/Infraestructure/Migrations/20260420230715_InitialCreate.Designer.cs
+/Backend/Infraestructure/Data/DBContextFactory.cs

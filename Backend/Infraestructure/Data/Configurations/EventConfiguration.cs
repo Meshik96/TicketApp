@@ -16,5 +16,13 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             Venue = "Estadio Municipal de Berazategui",
             Status = "Active"
         });
+        builder.HasData(new Event
+        {
+            Id = 2,
+            Name = "Fin de Año Varela",
+            EventDate = new DateTime(2026, 12, 30, 21, 0, 0),
+            Venue = "Estadio UNAJ",
+            Status = "Active"
+        });
     }
 }
