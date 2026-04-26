@@ -1,7 +1,7 @@
 using Application.DTOs.Reservations;
 using Application.Interfaces.Persistence.Reservations;
 using Domain.Entities;
-using Infraestructure.Data;
+using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Reservations;
@@ -21,8 +21,9 @@ public class ReservationCommands : IReservationCommands
         {
             try
             {
-                // Obtener el asiento
+                // obtain seat
                 var seat = await _context.Seats
+                    .Include(s => s.Sector)
                     .FirstOrDefaultAsync(s => s.Id == seatId);
 
                 if (seat == null)
@@ -31,7 +32,7 @@ public class ReservationCommands : IReservationCommands
                 if (seat.Status != "Available")
                     throw new InvalidOperationException($"Seat is already {seat.Status}");
 
-                // Verificar que el usuario existe
+                // verify user exists
                 var user = await _context.Users
                     .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.Id == userId);
@@ -39,11 +40,11 @@ public class ReservationCommands : IReservationCommands
                 if (user == null)
                     throw new InvalidOperationException("User not found");
 
-                // Cambiar estado del asiento a "Reserved"
+                // change seat status
                 seat.Status = "Reserved";
                 _context.Seats.Update(seat);
 
-                // Crear la reserva
+                // create reservation
                 var reservation = new Reservation
                 {
                     Id = Guid.NewGuid(),
@@ -51,12 +52,12 @@ public class ReservationCommands : IReservationCommands
                     SeatId = seatId,
                     Status = "Pending",
                     ReservedAt = DateTime.UtcNow,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(15) // 15 minutos de reserva
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(5) // 
                 };
 
                 await _context.Reservations.AddAsync(reservation);
 
-                // Crear entrada en AuditLog
+                // auditlog entries
                 var auditLog = new AuditLog
                 {
                     Id = Guid.NewGuid(),
@@ -64,20 +65,29 @@ public class ReservationCommands : IReservationCommands
                     Action = "RESERVE_SEAT",
                     EntityType = "Seat",
                     EntityId = seatId.ToString(),
-                    Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber} in Sector {seat.SectorId} reserved by User {userId}",
+                    Details = $"Seat: {seat.RowIdentifier}{seat.SeatNumber}, in Sector: {seat.SectorId}, in Event: {seat.Sector.EventId}, reserved by User {userId}",
                     CreatedAt = DateTime.UtcNow
                 };
-
+                var auditLog2 = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Action = "CREATE_RESERVATION",
+                    EntityType = "Reservation",
+                    EntityId = reservation.Id.ToString(),
+                    Details = $"Reservation created for Seat: {seat.Id} , by User {userId}",
+                    CreatedAt = DateTime.UtcNow
+                };
                 await _context.AuditLogs.AddAsync(auditLog);
+                await _context.AuditLogs.AddAsync(auditLog2);
 
-                // Guardar cambios
+                // save all changes
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return new SimpleReservationResponse
                 {
                     ReservationId = reservation.Id,
-                    Message = "Seat reserved successfully",
                     SeatStatus = "Reserved"
                 };
             }
@@ -87,5 +97,45 @@ public class ReservationCommands : IReservationCommands
                 throw;
             }
         }
+    }
+    public async Task DeleteReservationAsync(Guid reservationId)
+    {
+        var reservation = await _context.Reservations
+            .FirstOrDefaultAsync(r => r.Id == reservationId);
+        
+        var seat = await _context.Seats
+            .FirstOrDefaultAsync(s => s.Id == reservation.SeatId);
+       
+        var auditLog = new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            UserId = reservation.UserId,
+            Action = "RELEASE_SEAT",
+            EntityType = "Seat",
+            EntityId = reservation.SeatId.ToString(),
+            Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber} released manually by User {reservation.UserId}",
+            CreatedAt = DateTime.UtcNow
+        };
+        await _context.AuditLogs.AddAsync(auditLog);
+        if (seat != null && seat.Status == "Reserved")
+        {
+            seat.Status = "Available";
+            _context.Seats.Update(seat);
+        }
+        var auditLog2 = new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            UserId = reservation.UserId,
+            Action = "REMOVE_SEAT_RESERVATION",
+            EntityType = "Reservation",
+            EntityId = reservation.Id.ToString(),
+            Details = $"Reservation removed for Seat {seat.RowIdentifier}{seat.SeatNumber} by User {reservation.UserId}",
+            CreatedAt = DateTime.UtcNow
+        };
+        await _context.AuditLogs.AddAsync(auditLog2);
+        _context.Reservations.Remove(reservation);
+        
+       
+        await _context.SaveChangesAsync();
     }
 }

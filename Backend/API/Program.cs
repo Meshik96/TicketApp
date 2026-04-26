@@ -10,8 +10,8 @@ using Application.Interfaces.Persistence.Users;
 using Infrastructure.Persistence.Events;
 using Infrastructure.Persistence.Seats;
 using Infrastructure.Persistence.Reservations;
-using Infraestructure.Persistence.Users;
-using Infraestructure.Data;
+using Infrastructure.Persistence.Users;
+using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -45,7 +45,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // ==================== PERSISTENCE LAYER ====================
 builder.Services.AddScoped<IEventQueries, EventQueries>();
 builder.Services.AddScoped<ISeatQueries, SeatQueries>();
+builder.Services.AddScoped<ISeatCommands, SeatCommands>();
 builder.Services.AddScoped<IReservationCommands, ReservationCommands>();
+builder.Services.AddScoped<IReservationQueries, ReservationQueries>();
 
 
 // USERS
@@ -61,6 +63,9 @@ builder.Services.AddScoped<IReservationService, ReservationService>();
 
 // USERS
 builder.Services.AddScoped<IUserService, UserService>();
+
+// Reservation Cleanup Worker
+builder.Services.AddHostedService<ReservationCleanupWorker>();
 
 var app = builder.Build();
 

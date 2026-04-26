@@ -1,9 +1,9 @@
 ﻿using Application.Interfaces.Persistence.Users;
 using Domain.Entities;
-using Infraestructure.Data;
+using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Infraestructure.Persistence.Users;
+namespace Infrastructure.Persistence.Users;
 public class UserQueries : IUserQueries
 {
     private readonly AppDbContext _context;

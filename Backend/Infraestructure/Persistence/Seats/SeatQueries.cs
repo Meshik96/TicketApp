@@ -1,6 +1,6 @@
 using Application.DTOs.Seats;
 using Application.Interfaces.Persistence.Seats;
-using Infraestructure.Data;
+using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Seats;

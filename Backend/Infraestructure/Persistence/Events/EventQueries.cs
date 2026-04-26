@@ -1,6 +1,6 @@
 using Application.DTOs.Events;
 using Application.Interfaces.Persistence.Events;
-using Infraestructure.Data;
+using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Events;

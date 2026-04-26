@@ -1,6 +1,6 @@
 namespace Application.DTOs.Reservations;
 
-public class SimpleReservationResponse
+public class ReservationResponse
 {
     public Guid ReservationId { get; set; }
     public int UserId { get; set; }
