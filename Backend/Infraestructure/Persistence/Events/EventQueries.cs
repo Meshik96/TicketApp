@@ -32,7 +32,8 @@ public class EventQueries : IEventQueries
                 Name = e.Name,
                 EventDate = e.EventDate,
                 Venue = e.Venue,
-                Status = e.Status
+                Status = e.Status,
+                ImageUrl = e.ImageUrl,
             })
             .ToListAsync();
 
