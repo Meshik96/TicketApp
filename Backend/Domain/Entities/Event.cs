@@ -10,7 +10,7 @@ namespace Domain.Entities
         public DateTime EventDate { get; set; }
         public string Venue { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
-
+        public string ImageUrl { get; set; } = string.Empty;
         public ICollection<Sector> Sectors { get; set; } = new List<Sector>();
     }
 }

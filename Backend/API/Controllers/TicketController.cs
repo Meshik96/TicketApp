@@ -73,7 +73,7 @@ namespace API.Controllers
         /// y persiste el evento en AuditLog (sin control estricto de concurrencia)
         /// </summary>
         [HttpPost("reservations")]
-        public async Task<IActionResult> ReserveSeats([FromBody] SimpleReserveRequest request)
+        public async Task<IActionResult> ReserveSeats([FromBody] ReserveRequest request)
         {
             try
             {

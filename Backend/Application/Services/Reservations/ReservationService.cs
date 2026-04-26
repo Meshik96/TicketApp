@@ -13,7 +13,7 @@ public class ReservationService : IReservationService
         _reservationCommands = reservationCommands;
     }
 
-    public async Task<SimpleReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId)
+    public async Task<ReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId)
     {
         return await _reservationCommands.ReserveSeatsNaiveAsync(userId, seatId);
     }

@@ -14,7 +14,8 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             Name = "Concierto de Rock UNAJ",
             EventDate = new DateTime(2026, 11, 15, 21, 0, 0),
             Venue = "Estadio Municipal de Berazategui",
-            Status = "Active"
+            Status = "Active",
+            ImageUrl = "/images/evento1.jpg"
         });
         builder.HasData(new Event
         {
@@ -22,7 +23,8 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             Name = "Fin de Año Varela",
             EventDate = new DateTime(2026, 12, 30, 21, 0, 0),
             Venue = "Estadio UNAJ",
-            Status = "Active"
+            Status = "Active",
+            ImageUrl = "/images/evento2.jpg"
         });
     }
 }

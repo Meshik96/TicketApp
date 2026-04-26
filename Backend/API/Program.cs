@@ -76,7 +76,7 @@ if (app.Environment.IsDevelopment())
     await next();
 });
 }
-
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 //CORS ACTIVACIÓN

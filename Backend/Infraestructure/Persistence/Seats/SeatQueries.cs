@@ -30,7 +30,10 @@ public class SeatQueries : ISeatQueries
                 SectorName = s.Sector.Name,
                 RowIdentifier = s.RowIdentifier,
                 SeatNumber = s.SeatNumber,
-                Status = s.Status
+                Status = s.Status,
+                Price = s.Sector.Price,
+                SectorGridX = s.Sector.GridX,
+                SectorGridY = s.Sector.GridY
             })
             .ToListAsync();
 

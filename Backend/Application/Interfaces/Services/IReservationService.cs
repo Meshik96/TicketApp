@@ -4,5 +4,5 @@ namespace Application.Interfaces.Services;
 
 public interface IReservationService
 {
-    Task<SimpleReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId);
+    Task<ReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId);
 }
