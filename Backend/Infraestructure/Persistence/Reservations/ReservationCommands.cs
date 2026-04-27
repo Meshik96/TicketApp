@@ -15,7 +15,7 @@ public class ReservationCommands : IReservationCommands
         _context = context;
     }
 
-    public async Task<SimpleReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId)
+    public async Task<ReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId)
     {
         using (var transaction = await _context.Database.BeginTransactionAsync())
         {
@@ -85,7 +85,7 @@ public class ReservationCommands : IReservationCommands
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return new SimpleReservationResponse
+                return new ReservationResponse
                 {
                     ReservationId = reservation.Id,
                     SeatStatus = "Reserved"
