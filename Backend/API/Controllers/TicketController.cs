@@ -2,6 +2,7 @@ using Application.DTOs.Reservations;
 using Application.Interfaces.Services;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Application.DTOs.Seats;
 
 
 namespace API.Controllers
@@ -14,17 +15,20 @@ namespace API.Controllers
         private readonly ISeatService _seatService;
         private readonly IReservationService _reservationService;
         private readonly IUserService _userService;
+        private readonly ISeatService _seatsService;
 
         public TicketController(
             IEventService eventService,
             ISeatService seatService,
             IReservationService reservationService,
-            IUserService userService)
+            IUserService userService,
+            ISeatService seatsService)
         {
             _eventService = eventService;
             _seatService = seatService;
             _reservationService = reservationService;
             _userService = userService;
+            _seatsService = seatsService;
         }
 
         /// <summary>
@@ -73,7 +77,7 @@ namespace API.Controllers
         /// y persiste el evento en AuditLog (sin control estricto de concurrencia)
         /// </summary>
         [HttpPost("reservations")]
-        public async Task<IActionResult> ReserveSeats([FromBody] ReserveRequest request)
+        public async Task<IActionResult> ReserveSeats([FromBody] ReservationRequest request)
         {
             try
             {
@@ -96,6 +100,49 @@ namespace API.Controllers
             }
         }
 
+        [HttpDelete("reservations")]
+        public async Task<IActionResult> DeleteReservation([FromQuery]Guid seatId, [FromQuery] int userId)
+        {
+            try
+            {
+                await _reservationService.DeleteReservationAsync(userId, seatId);
+                return Ok(new { message = "Reservation deleted successfully" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+            }
+        }
+
+        [HttpPost("buy")]
+        public async Task<IActionResult> BuySeats([FromBody] BuyRequest request)
+        {
+            // 1. Validar fallo de serialización del JSON
+            if (request == null)
+                return BadRequest("El objeto request es nulo. Falló el binding del JSON desde el frontend.");
+
+            if (request.SeatIds == null)
+                return BadRequest("La lista SeatIds llegó nula.");
+
+            try
+            {
+                await _seatsService.ConfirmPurchaseAsync(request.UserId, request.SeatIds);
+                return Ok(new { message = "Compra realizada con éxito" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                // Enviar el StackTrace revela la clase y línea exacta del error
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
 
         [HttpGet("users")]
         public async Task<IActionResult> GetUsers()

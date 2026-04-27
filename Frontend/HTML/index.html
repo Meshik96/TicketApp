@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Ticketing</title>
+    <link rel="stylesheet" href="CSS/style.css" />
+</head>
+<body data-sys-render="auto">
+
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="eventos.html">Eventos</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="panel">
+        
+
+        <h1>Mapa de Asientos</h1>
+
+        <div class="leyenda">
+            <span>🟢 Disponible</span>
+            <span>🔵 Reservado</span>
+            <span>🔴 Vendido</span>
+        </div>
+
+        <div id="grid" class="grid"></div>
+
+        <div class="panel carrito">
+        <h3>🛒 Carrito</h3>
+            <div class="cart-details">
+                <div class="cart-list">
+                    <ul id="cartList"></ul>
+                </div>
+                <div class="cart-total">
+                    <p>Asientos seleccionados: <span id="count">0</span></p>
+                    <p>Total: $<span id="total">0</span></p>
+                    <button id="comprar">Comprar</button>
+                </div>
+            </div>
+        </div>
+
+    <script src="JS/index.js"></script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 ﻿using Application.Interfaces.Persistence.Users;
 using Domain.Entities;
-using Infraestructure.Data;
+using Infrastructure.Data;
 
-namespace Infraestructure.Persistence.Users;
+namespace Infrastructure.Persistence.Users;
 public class UserCommands : IUserCommands
 {
     private readonly AppDbContext _context;

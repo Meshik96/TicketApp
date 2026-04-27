@@ -20,8 +20,4 @@
     <ProjectReference Include="..\Infraestructure\Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="BackgroundServices\" />
-  </ItemGroup>
-
 </Project>

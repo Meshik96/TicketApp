@@ -165,6 +165,41 @@ class ApiService {
         }
     }
 
+    async buySeats(userId, seatIds) {
+        const response = await fetch(`${this.baseUrl}/api/v1/buy`, { // Ajusta la ruta base según tu controller
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.getToken()}` // Si usas JWT
+            },
+            body: JSON.stringify({ userId, seatIds })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(errorData || 'Error en la compra');
+        }
+
+        return response.json();
+    }
+
+    async cancelReservation(userId, seatId) {
+        try {
+            // Usamos la constante del endpoint y concatenamos los query params
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.RESERVE}?seatId=${seatId}&userId=${parseInt(userId)}`;
+            
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: this.getHeaders(true) 
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error canceling reservation:', error);
+            throw error;
+        }
+    }
+    
     /**
      * Logout
      */
