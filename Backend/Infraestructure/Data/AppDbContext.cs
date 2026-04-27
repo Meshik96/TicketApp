@@ -2,7 +2,7 @@
 using Domain.Entities;
 using Infraestructure.Data.Configurations;
 
-namespace Infraestructure.Data
+namespace Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
