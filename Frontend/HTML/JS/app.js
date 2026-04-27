@@ -4,7 +4,20 @@ import { SeatsController } from './controllers/SeatsController.js';
 import { closeModals } from './utils/helpers.js';
 import { apiService } from './api.js';
 import { STORAGE_KEYS } from './utils/constants.js';
+const injectMockUser = () => {
+    const mockUser = {
+        id: 1, // El ID que figura en tu tabla SQL
+        name: "Admin Test",
+        email: "admin@test.com",
+        token: "mock-session-token"
+    };
 
+    // Usamos la clave de almacenamiento definida en tus constantes
+    localStorage.setItem('ticketapp_user', JSON.stringify(mockUser));
+    console.log("✓ Usuario Mock inyectado: Admin Test (ID: 1)");
+};
+
+injectMockUser();
 
 class AppRouter {
     constructor() {
