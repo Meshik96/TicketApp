@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TicketApp - Eventos</title>
+        <link rel="stylesheet" href="CSS/styles.css" />
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="app-header">
+                <div class="header-content">
+                    🎫TicketApp
+                </div>
+                <div class="header-actions">
+                <span class="user-info">Bienvenido, <span id="userNameDisplay">Usuario</span></span>
+                <button id="logoutBtn" class="btn btn-secondary">
+                    Cerrar Sesión
+                </button>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <!-- Events Section -->
+                <section class="events-section">
+                    <div class="section-header">
+                        Próximos Eventos
+                    </div>
+
+                    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Cargando eventos...</p>
+                    </div>
+
+                    <div id="eventsGrid" class="events-grid">
+                        <!-- Events will be loaded here -->
+                    </div>
+
+                    <div id="errorContainer" class="error-message" style="display: none;"></div>
+
+                    <!-- Pagination -->
+                    <div id="paginationContainer" class="pagination" style="display: none;">
+                        <button id="prevBtn" class="btn btn-secondary" disabled>← Anterior</button>
+                        <span id="pageInfo" class="page-info">Página 1</span>
+                        <button id="nextBtn" class="btn btn-secondary">Siguiente →</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+        <script type="module" src="JS/app.js"></script>
+    </body>
+</html>
