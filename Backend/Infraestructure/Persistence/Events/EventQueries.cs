@@ -23,7 +23,7 @@ public class EventQueries : IEventQueries
         var totalCount = await query.CountAsync();
 
         var events = await query
-            .OrderByDescending(e => e.EventDate)
+            .OrderBy(e => e.EventDate)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(e => new EventListResponse

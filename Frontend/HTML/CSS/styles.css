@@ -1,6 +1,6 @@
 :root {
-    --primary-color: #ac864d;
-    --primary-dark: #68512e;
+    --primary-color: #ce9737;
+    --primary-dark: #F9C64B;
     --secondary-color: #23211E;
     --success-color: #10b981;
     --error-color: #ef4444;
@@ -38,7 +38,7 @@ body {
     width: 80%;
     display: flex;
     flex-direction: row;
-    height: calc(100vh - 80px); /* Esto solo debe afectar al main, no al header */
+    height: calc(100vh - 80px); 
     background-color: var(--bg-primary);
 }
 .app-header {
@@ -52,24 +52,136 @@ body {
     border-bottom: 1px solid var(--border-color);
     display: flex;
     flex-wrap: wrap; 
-    align-items: center; /* Mejor que vertical-align para flexbox */
+    align-items: center; 
 }
 .header-content {
-    display: inline-block;
-    vertical-align: top;
+    margin-left: 2%;
     font-size: 2em;
     font-weight: bold;
     unicode-bidi: isolate;
 }
-
 .header-actions {
     display: inline-block;
-    width: 350px;
+    font-weight: bold;
     text-align: right;
     margin-left: auto;
     margin-right: 2%;
     flex: 1 1 200px;
 }
+.user-info-header {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    background-color: #2a2a2a; /* Un tono ligeramente distinto */
+}
+#userNameDisplay {
+    color: #ffd700; /* Dorado para resaltar el nombre */
+    font-weight: bold;
+    font-size: 0.9em;
+    display: block;
+}
+.user-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-menu {
+    background: transparent;
+    color: white;
+    border: none; /* Quitamos el borde para un look más limpio */
+    padding: 8px;
+    width: 35px;  /* Ancho y alto igual para que sea simétrico */
+    height: 35px;
+    border-radius: 50%; /* Lo hace circular */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    font-size: 1.2em; /* Agranda los puntos */
+}
+.btn-menu:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Efecto de hover sutil */
+}
+.dots-icon {
+    font-size: 35px;
+    line-height: 1;
+}
+.dropdown-content {
+    display: none; /* Oculto por defecto */
+    position: absolute;
+    right: 0; /* Se alinea al borde derecho del botón */
+    top: 100%;
+    background-color: #222;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    z-index: 1000;
+    border-radius: 4px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+.dropdown-content hr {
+    border: 0;
+    border-top: 1px solid #333;
+    margin: 0;
+}
+/* Mostrar el menú al hacer clic (usando una clase activa) */
+.dropdown-content.show {
+    display: block;
+}
+
+.dropdown-content a {
+    color: white;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+}
+
+.dropdown-content a:hover {
+    background-color: #444;
+}
+
+.logout-link {
+    color: #ff5555 !important;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid #444;
+    margin: 0;
+}
+@media (max-width: 1200px) {
+    .main-content {
+        width: 98%;
+        
+    }
+    .app-header {
+        display: grid;
+        /* 1fr a los lados obliga a que el centro sea el centro real */
+        grid-template-columns: 1fr auto 1fr; 
+        align-items: center;
+        width: 100%;
+        padding: 10px 20px;
+        box-sizing: border-box;
+    }
+    .header-content {
+        margin-left: 0;
+        grid-column: 2;
+        text-align: center;
+        color: white;
+    }
+    .header-actions {
+        grid-column: 3;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-right: 10%;
+    }
+}
+
+
+
 
 /* NAVBAR */
 .navbar {
@@ -101,22 +213,32 @@ body {
   font-size: 40px;
   font-weight: bold;
 }
+.events-section{
+    width: 100%;
+}
 .events-grid {
     margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 15px;
+    justify-content: space-evenly;
 }
 .event-card {
-    display: inline-block;
+    max-width: 100%;
+    display: flex;
     border-color: var(--border-color);
     border-width: 1px;
     border-style: solid;
     padding: 15px;
     border-radius: 10px;
-    
     flex-direction: column;
-    gap: 10px;
+    flex: 0 0 auto;
+    box-sizing: border-box;
 }
 .event-image {
-    height: 400px;
+    max-width: 100%;
+    width: 350px;
     object-fit: contain;
     border-radius: 8px;
 }
@@ -153,6 +275,27 @@ body {
 .btn-select-event {
     width: 100%;
 }
+#paginationContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+#pageInfo {
+    width: 50px;
+}
+@media (max-width: 480px) {
+    .pagination-container {
+        gap: 10px;
+        justify-content: space-between; /* Empuja los botones a los bordes */
+    }
+    #pageInfo {
+        font-size: 14px;
+        text-align: center;
+    }
+}
 /* PANEL */
 .panel {
     margin-top: 20px;
@@ -160,6 +303,7 @@ body {
     padding: 15px;
     border-radius: 10px;
 }
+
 
 /* ============================================
    BUTTONS
@@ -215,9 +359,17 @@ body {
     width: 100%;
 }
 
-
-
-
+.button-pagination {
+    padding: 10px 20px;
+    font-size: 16px;
+    white-space: nowrap; /* Evita que el texto del botón se parta en dos líneas */
+}
+@media (max-width: 480px) {
+    .button-pagination {
+            padding: 8px 12px; /* Reduce el tamaño del botón */
+            font-size: 14px; /* Reduce la fuente */
+        }
+}
 
 
 
@@ -476,6 +628,21 @@ body {
 .info-content {
     display: flex;
     flex-direction: column;
+}
+.small-event-image {
+    width: 60px;
+    height: 60px;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.small-event-image img {
+    width: 60px;
+    border-radius: 8px;
+    display: flex;
+    object-fit: contain;
 }
 .info-label {
     color: #bbb;

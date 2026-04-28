@@ -1,5 +1,5 @@
 import { apiService } from '../api.js';
-import { STORAGE_KEYS, MESSAGES } from '../utils/constants.js';
+import { STORAGE_KEYS, MESSAGES, API_CONFIG } from '../utils/constants.js';
 import { formatDate, escapeHtml, showAlert } from '../utils/helpers.js';
 
 export class SeatsController {
@@ -106,10 +106,17 @@ export class SeatsController {
         const eventNameEl = document.getElementById('eventTitle');
         const eventDateEl = document.getElementById('eventDate');
         const eventVenueEl = document.getElementById('eventVenue');
+        const eventImageEl = document.getElementById('eventImage');
 
         if (eventNameEl) eventNameEl.textContent = event.name;
         if (eventDateEl) eventDateEl.textContent = formatDate(event.eventDate);
         if (eventVenueEl) eventVenueEl.textContent = event.venue;
+        if (eventImageEl) {
+        eventImageEl.src = event.imageUrl 
+                ? `${API_CONFIG.BASE_URL}${event.imageUrl}` 
+                : 'assets/images/placeholder.jpg';
+            eventImageEl.alt = event.name;
+        }
     }
 
     renderSeatMap(seats) {
