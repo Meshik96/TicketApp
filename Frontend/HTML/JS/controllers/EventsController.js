@@ -8,11 +8,13 @@ export class EventsController {
         this.currentEventPage = 1;
         this.pageSize = PAGINATION.DEFAULT_PAGE_SIZE; // Definir constante local o importar
         this.initListeners();
+        this.eventsPerPage = this.calculateEventsPerPage();
+        this.setupResponsiveListener();
         this.loadEventsPage();
     }
 
-    initListeners() {
-                document.getElementById('eventsGrid')?.addEventListener('click', (e) => {
+    initListeners() {  
+            document.getElementById('eventsGrid')?.addEventListener('click', (e) => {
             const eventCard = e.target.closest('.event-card');
             if (eventCard && e.target.classList.contains('btn-select-event')) {
                 const eventId = eventCard.dataset.eventId;
@@ -27,6 +29,23 @@ export class EventsController {
 
         document.getElementById('prevBtn')?.addEventListener('click', () => this.previousPage());
         document.getElementById('nextBtn')?.addEventListener('click', () => this.nextPage());
+        const menuBtn = document.getElementById('userMenuBtn');
+        const dropdown = document.getElementById('userDropdown');
+
+        if (menuBtn && dropdown) {
+            // Maneja la apertura/cierre del menú
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Evita que el evento suba al window
+                dropdown.classList.toggle('show');
+            });
+
+            // Cierra el menú si se hace clic fuera de él
+            window.addEventListener('click', (e) => {
+                if (dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
     }
 
     async loadEventsPage() {
@@ -48,8 +67,7 @@ export class EventsController {
             if (loadingSpinner) loadingSpinner.style.display = 'flex';
             if (eventsGrid) eventsGrid.innerHTML = '';
             if (errorContainer) errorContainer.style.display = 'none';
-
-            const result = await apiService.getEvents(this.currentEventPage, this.pageSize);
+            const result = await apiService.getEvents(this.currentEventPage, this.eventsPerPage);
             
             if (!result.events || result.events.length === 0) {
                 if (eventsGrid) {
@@ -72,7 +90,29 @@ export class EventsController {
             if (loadingSpinner) loadingSpinner.style.display = 'none';
         }
     }
-
+    calculateEventsPerPage() {
+        const width = window.innerWidth;
+        if (width >= 1500) return 6;
+        if (width >= 800) return 4;
+        return 3;
+    }
+    setupResponsiveListener() {
+        let resizeTimer;
+        
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            
+            resizeTimer = setTimeout(() => {
+                const newEventsPerPage = this.calculateEventsPerPage();
+                
+                if (this.eventsPerPage !== newEventsPerPage) {
+                    this.eventsPerPage = newEventsPerPage;
+                    this.currentEventPage = 1; // Variable corregida
+                    this.fetchAndDisplayEvents(); // Método de recarga corregido
+                }
+            }, 1); 
+        });
+    }
     async previousPage() {
         if (this.currentEventPage > 1) {
             this.currentEventPage--;

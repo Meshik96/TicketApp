@@ -13,10 +13,22 @@
                     🎫TicketApp
                 </div>
                 <div class="header-actions">
-                <span class="user-info">Bienvenido, <span id="userNameDisplay">Usuario</span></span>
-                <button id="logoutBtn" class="btn btn-secondary">
-                    Cerrar Sesión
-                </button>
+                    <div class="user-menu-container">
+                        <button id="userMenuBtn" class="btn-menu">
+                            <i class="fas fa-ellipsis-v"></i> 
+                            
+                            <span class="dots-icon">&#8942;</span> 
+                        </button>
+                        <div id="userDropdown" class="dropdown-content">
+                            <div class="user-info-header">
+                                <span id="userNameDisplay">Usuario</span>
+                            </div>
+                            <a href="#" id="profileLink">Mi Perfil</a>
+                            <a href="#" id="settingsLink">Configuración</a>
+                            <hr>
+                            <a href="#" id="logoutBtn" class="logout-link">Cerrar Sesión</a>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -40,9 +52,9 @@
 
                     <!-- Pagination -->
                     <div id="paginationContainer" class="pagination" style="display: none;">
-                        <button id="prevBtn" class="btn btn-secondary" disabled>← Anterior</button>
+                        <button id="prevBtn" class="btn btn-pagination" disabled>← Anterior</button>
                         <span id="pageInfo" class="page-info">Página 1</span>
-                        <button id="nextBtn" class="btn btn-secondary">Siguiente →</button>
+                        <button id="nextBtn" class="btn btn-pagination">Siguiente →</button>
                     </div>
                 </section>
             </main>
