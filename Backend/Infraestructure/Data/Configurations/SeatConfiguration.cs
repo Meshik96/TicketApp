@@ -10,59 +10,55 @@ public class SeatConfiguration : IEntityTypeConfiguration<Seat>
     {
         var seats = new List<Seat>();
 
-        string[] vipRows = { "A", "B", "C", "D", "E" };
-        string[] generalRows = { "F", "G", "H", "I", "J" };
-
-        // VIP Sector (SectorId: 1)
-        foreach (var row in vipRows)
+        // Definición de la configuración de todos los sectores: { Id, Filas, AsientosPorFila }
+        var allSectorConfigs = new[]
         {
-            for (int s = 1; s <= 10; s++)
-            {
-                seats.Add(new Seat
-                {
-                    Id = CreateGuidFromName($"VIP-{row}-{s}"),
-                    SectorId = 1,
-                    RowIdentifier = row,
-                    SeatNumber = s,
-                    Status = "Available",
-                    Version = 1
-                });
-            }
-        }
+        // Evento 1
+        new { Id = 1, Rows = 5, PerRow = 10 },  // VIP
+        new { Id = 2, Rows = 5, PerRow = 10 },  // General
+        // Evento 2
+        new { Id = 3, Rows = 10, PerRow = 15 },
+        new { Id = 4, Rows = 10, PerRow = 15 },
+        new { Id = 5, Rows = 10, PerRow = 15 },
+        new { Id = 6, Rows = 10, PerRow = 15 },
+        new { Id = 7, Rows = 10, PerRow = 15 },
+        new { Id = 8, Rows = 10, PerRow = 15 },
+        // Evento 3
+        new { Id = 9, Rows = 2, PerRow = 10 },
+        new { Id = 10, Rows = 3, PerRow = 10 },
+        // Evento 4
+        new { Id = 11, Rows = 5, PerRow = 20 },
+        new { Id = 12, Rows = 10, PerRow = 20 },
+        // Evento 5
+        new { Id = 13, Rows = 4, PerRow = 10 },
+        new { Id = 14, Rows = 6, PerRow = 10 },
+        new { Id = 15, Rows = 4, PerRow = 10 },
+        // Evento 6
+        new { Id = 16, Rows = 2, PerRow = 10 },
+        new { Id = 17, Rows = 8, PerRow = 15 },
+        new { Id = 18, Rows = 8, PerRow = 15 },
+        // Evento 7
+        new { Id = 19, Rows = 8, PerRow = 10 },
+        // Evento 8
+        new { Id = 20, Rows = 3, PerRow = 10 },
+        new { Id = 21, Rows = 7, PerRow = 10 },
+        new { Id = 22, Rows = 7, PerRow = 10 }
+    };
 
-        // General Sector (SectorId: 2)
-        foreach (var row in generalRows)
+        foreach (var config in allSectorConfigs)
         {
-            for (int s = 1; s <= 10; s++)
+            for (int r = 1; r <= config.Rows; r++)
             {
-                seats.Add(new Seat
-                {
-                    Id = CreateGuidFromName($"GEN-{row}-{s}"),
-                    SectorId = 2,
-                    RowIdentifier = row,
-                    SeatNumber = s,
-                    Status = "Available",
-                    Version = 1
-                });
-            }
-        }
-        int[] sectorIds = { 3, 4, 5, 6, 7, 8 };
-        int seatsPerSector = 150;
-        int seatsPerRow = 15;
-        int totalRows = seatsPerSector / seatsPerRow; // 10 filas
-
-        foreach (var sectorId in sectorIds)
-        {
-            for (int r = 1; r <= totalRows; r++)
-            {
+                // Genera etiqueta de fila (A, B, C...)
                 string rowLabel = ((char)('A' + (r - 1))).ToString();
 
-                for (int s = 1; s <= seatsPerRow; s++)
+                for (int s = 1; s <= config.PerRow; s++)
                 {
                     seats.Add(new Seat
                     {
-                        Id = CreateGuidFromName($"EV1-SEC{sectorId}-R{rowLabel}-S{s}"),
-                        SectorId = sectorId,
+                        // ID único basado en Sector, Fila y Asiento para evitar colisiones de GUID
+                        Id = CreateGuidFromName($"SEC{config.Id}-R{rowLabel}-S{s}"),
+                        SectorId = config.Id,
                         RowIdentifier = rowLabel,
                         SeatNumber = s,
                         Status = "Available",

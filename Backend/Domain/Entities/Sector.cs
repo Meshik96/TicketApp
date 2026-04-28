@@ -13,7 +13,6 @@ namespace Domain.Entities
         public int Capacity { get; set; }
         public int GridX { get; set; }
         public int GridY { get; set; }
-        public string Orientation { get; set; }
         public Event Event { get; set; } = null!;
         public ICollection<Seat> Seats { get; set; } = new List<Seat>();
     }
