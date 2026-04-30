@@ -20,6 +20,7 @@ public class SeatQueries : ISeatQueries
             .AsNoTracking()
             .Where(s => s.Sector.EventId == eventId)
             .Include(s => s.Sector)
+            .Include(s => s.Reservation)
             .OrderBy(s => s.Sector.Id)
             .ThenBy(s => s.RowIdentifier)
             .ThenBy(s => s.SeatNumber)
@@ -28,6 +29,8 @@ public class SeatQueries : ISeatQueries
                 Id = s.Id,
                 SectorId = s.SectorId,
                 SectorName = s.Sector.Name,
+                UserId = s.Reservation != null ? s.Reservation.UserId : 0,
+                ExpiresAt = s.Reservation != null ? s.Reservation.ExpiresAt : DateTime.MinValue,
                 RowIdentifier = s.RowIdentifier,
                 SeatNumber = s.SeatNumber,
                 Status = s.Status,
