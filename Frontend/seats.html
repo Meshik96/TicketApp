@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TicketApp - Seleccionar Asientos</title>
+        <link rel="stylesheet" href="CSS/styles.css" />
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="app-header">
+                <div class="header-content">
+                    🎫TicketApp
+                </div>
+                <div class="header-actions">
+                    <div class="user-menu-container">
+                        <button id="userMenuBtn" class="btn-menu">
+                            <i class="fas fa-ellipsis-v"></i> 
+                            
+                            <span class="dots-icon">&#8942;</span> 
+                        </button>
+                        <div id="userDropdown" class="dropdown-content">
+                            <div class="user-info-header">
+                                <span id="userNameDisplay">Usuario</span>
+                            </div>
+                            <a href="#" id="profileLink">Mi Perfil</a>
+                            <a href="#" id="settingsLink">Configuración</a>
+                            <hr>
+                            <a href="#" id="logoutBtn" class="logout-link">Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <section class="seat-map-section">
+                    <div class="zoom-viewport" id="zoomViewport">
+                        <div id="seatMapContainer" class="seat-map-container">
+            
+                            <div class="stage-reference">ESCENARIO</div>
+
+                            <div id="seatMap" class="seat-map"></div>
+                            <div id="loadingSpinner" class="overlay-status" style="display: none;">
+                                <div class="spinner"></div>
+                                <p>Cargando asientos...</p>
+                            </div>
+                            <div id="errorContainer" class="overlay-status error-message" style="display: none;"></div>
+                        </div> 
+                    </div>
+                    <div class="seat-legend">
+                        <div class="legend-item">
+                            <div class="seat available"></div>
+                            <span>Disponible</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="seat selected"></div>
+                            <span>Seleccionado</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="seat reserved"></div>
+                            <span>Reservado</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="seat sold"></div>
+                            <span>Vendido</span>
+                        </div>
+                    </div>
+                </section>
+                <aside class="event-details-section">
+            
+                <div id="eventDetailsCard" class="event-card-large">
+                    <div class="event-info-row">
+                        <div class="small-event-image">
+                            <img id="eventImage" src="" alt="Imagen del evento" />
+                        </div>
+                        <div class="info-content">
+                            <span class="info-label">Evento</span>
+                            <span class="info-value" id="eventTitle">Cargando...</span>
+                        </div>
+                    </div>
+
+                    <div class="event-info-row">
+                        <div class="icon-box">📅</div>
+                        <div class="info-content">
+                            <span class="info-label">Día y horario</span>
+                            <span class="info-value" id="eventDate">-</span>
+                        </div>
+                    </div>
+
+                    <div class="event-info-row">
+                        <div class="icon-box">📍</div>
+                        <div class="info-content">
+                            <span class="info-label">Lugar</span>
+                            <span class="info-value" id="eventVenue">-</span>
+                        </div>
+                    </div>
+
+                    <div id="selectedSeatsDisplay">
+                        <div class="event-info-row">
+                            <div class="icon-box">💺</div>
+                            <div class="info-content">
+                                <span class="info-label">Butacas</span>
+                                <span class="info-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timer-container">
+                    <span id="reservationTimer"></span>
+                </div>
+                <div class="checkout-footer">
+                    <div class="total-price" id="totalPrice">$ 0.00</div>
+                        <button id="buyBtn" class="btn-checkout" disabled>COMPRAR</button>
+                    </div>
+                </aside>
+            </main>
+        </div>
+
+        <div id="successModal" class="modal" style="display: none;">
+            <div class="modal-content modal-success">
+                <div class="modal-header">
+                    <h2>✓ ¡Reserva Exitosa!</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="successMessage">Tu asiento ha sido reservado correctamente.</p>
+                    <div id="reservationDetails" class="reservation-details"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="continueShoppingBtn" class="btn btn-primary">
+                        Continuar Comprando
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Login Modal -->
+        <div id="loginModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Iniciar Sesión</h2>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="userSelect">Usuario:</label>
+                            <select id="userSelect" required>
+                                <option value="">Selecciona un usuario...</option>
+                            </select>
+                            <div id="usersLoadingSpinner" class="loading-text" style="display: none; margin-top: 5px;">
+                                Cargando usuarios...
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="passwordInput">Contraseña:</label>
+                            <input type="password" id="passwordInput" placeholder="Ingresa contraseña"/>
+                        </div>
+
+                        <div id="loginError" class="error-message" style="display: none;"></div>
+
+                        <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%; margin-top: 15px;">
+                            Iniciar Sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+        <script type="module" src="JS/app.js"></script>
+    </body>
+</html>

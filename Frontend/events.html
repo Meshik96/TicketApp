@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TicketApp - Eventos</title>
+        <link rel="stylesheet" href="CSS/styles.css" />
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="app-header">
+                <div class="header-content">
+                    🎫TicketApp
+                </div>
+                <div class="header-actions">
+                    <div class="user-menu-container">
+                        <button id="userMenuBtn" class="btn-menu">
+                            <i class="fas fa-ellipsis-v"></i> 
+                            <span class="dots-icon">&#8942;</span> 
+                        </button>
+                        
+                        <div id="userDropdown" class="dropdown-content">
+                            
+                            <div id="loggedOutMenu">
+                                <a href="#" id="openLoginMenuBtn">Iniciar Sesión</a>
+                            </div>
+
+                            <div id="loggedInMenu" style="display: none;">
+                                <div class="user-info-header">
+                                    <span id="userNameDisplay">Usuario</span>
+                                </div>
+                                <a href="#" id="profileLink">Mi Perfil</a>
+                                <a href="#" id="settingsLink">Configuración</a>
+                                <hr>
+                                <a href="#" id="logoutBtn" class="logout-link">Cerrar Sesión</a>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <!-- Events Section -->
+                <section class="events-section">
+                    <div class="section-header">
+                        Próximos Eventos
+                    </div>
+
+                    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Cargando eventos...</p>
+                    </div>
+
+                    <div id="eventsGrid" class="events-grid">
+                        <!-- Events will be loaded here -->
+                    </div>
+
+                    <div id="errorContainer" class="error-message" style="display: none;"></div>
+
+                    <!-- Pagination -->
+                    <div id="paginationContainer" class="pagination" style="display: none;">
+                        <button id="prevBtn" class="btn btn-pagination" disabled>← Anterior</button>
+                        <span id="pageInfo" class="page-info">Página 1</span>
+                        <button id="nextBtn" class="btn btn-pagination">Siguiente →</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Login Modal -->
+        <div id="loginModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Iniciar Sesión</h2>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="userSelect">Usuario:</label>
+                            <select id="userSelect" required>
+                                <option value="">Selecciona un usuario...</option>
+                            </select>
+                            <div id="usersLoadingSpinner" class="loading-text" style="display: none; margin-top: 5px;">
+                                Cargando usuarios...
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="passwordInput">Contraseña:</label>
+                            <input type="password" id="passwordInput" placeholder="Ingresa contraseña" />
+                        </div>
+
+                        <div id="loginError" class="error-message" style="display: none;"></div>
+
+                        <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%; margin-top: 15px;">
+                            Iniciar Sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="JS/app.js"></script>
+    </body>
+</html>

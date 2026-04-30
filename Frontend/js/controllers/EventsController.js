@@ -19,8 +19,18 @@ export class EventsController {
             if (eventCard && e.target.classList.contains('btn-select-event')) {
                 const eventId = eventCard.dataset.eventId;
                 
+                // Check if user is logged in
+                const user = sessionStorage.getItem(STORAGE_KEYS.USER);
+                if (!user) {
+                    // Show login modal if not logged in
+                    if (window.app && window.app.loginController) {
+                        window.app.loginController.showModal();
+                    }
+                    return;
+                }
+                
                 // Persistir ID para que sobreviva a la recarga de página
-                localStorage.setItem(STORAGE_KEYS.CURRENT_EVENT, eventId);
+                sessionStorage.setItem(STORAGE_KEYS.CURRENT_EVENT, eventId);
                 
                 console.log('Evento seleccionado y guardado:', eventId);
                 this.router.navigate('seats', { eventId });
@@ -46,15 +56,53 @@ export class EventsController {
                 }
             });
         }
+        const openLoginMenuBtn = document.getElementById('openLoginMenuBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        if (openLoginMenuBtn) {
+            openLoginMenuBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                dropdown.classList.remove('show'); // Cierra el menú
+                if (window.app && window.app.loginController) {
+                    window.app.loginController.showModal();
+                }
+            });
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                sessionStorage.removeItem(STORAGE_KEYS.USER);
+                dropdown.classList.remove('show'); // Cierra el menú
+                this.updateUserDisplay(); // Actualiza la UI a estado desloggeado
+            });
+        }
+        this.updateUserDisplay();
     }
 
     async loadEventsPage() {
-        const user = apiService.getCurrentUser();
-        if (user) {
-            const userNameDisplay = document.getElementById('userNameDisplay');
-            if (userNameDisplay) userNameDisplay.textContent = user.name || user.email;
-        }
+        this.updateUserDisplay();
         await this.fetchAndDisplayEvents();
+    }
+
+    /**
+     * Update user display in header
+     */
+
+    updateUserDisplay() {
+        const user = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.USER) || 'null');
+        const loggedOutMenu = document.getElementById('loggedOutMenu');
+        const loggedInMenu = document.getElementById('loggedInMenu');
+        const userNameDisplay = document.getElementById('userNameDisplay');
+
+        if (user) {
+            if (loggedOutMenu) loggedOutMenu.style.display = 'none';
+            if (loggedInMenu) loggedInMenu.style.display = 'block';
+            if (userNameDisplay) userNameDisplay.textContent = user.name || 'Usuario';
+        } else {
+            if (loggedOutMenu) loggedOutMenu.style.display = 'block';
+            if (loggedInMenu) loggedInMenu.style.display = 'none';
+        }
     }
 
     async fetchAndDisplayEvents() {
@@ -133,14 +181,14 @@ export class EventsController {
 
         eventsGrid.innerHTML = events.map(event => `
             <div class="event-card" data-event-id="${event.id}">
-                <div class="event-card-header">
-                    ${escapeHtml(event.name)}
-                </div>
                 <div class="event-card-body">
                     <img src="${event.imageUrl ? `${API_CONFIG.BASE_URL}${event.imageUrl}` : 'assets/images/placeholder.jpg'}" 
                              alt="${escapeHtml(event.name)}" 
                              class="event-image"
                              onerror="this.src='assets/images/placeholder.jpg'">
+                    <div class="event-card-header">
+                        ${escapeHtml(event.name)}
+                    </div>
                     <div class="event-info">
                         <span class="event-icon">📅</span>
                         <div class="event-info-text">

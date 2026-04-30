@@ -11,11 +11,9 @@ export class SeatsController {
         this.allSeats = [];
         this.pz = null;
         this.reservationTimer = null;
-        
         this.initListeners();
         this.loadSeatsPage();
     }
-
     initListeners() {
         const mapContainer = document.getElementById('seatMapContainer');
         if (mapContainer) {
@@ -29,28 +27,44 @@ export class SeatsController {
             }
             });
         }
+        const menuBtn = document.getElementById('userMenuBtn');
+        const dropdown = document.getElementById('userDropdown');
+        if (menuBtn && dropdown) {
+            // Maneja la apertura/cierre del menú
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Evita que el evento suba al window
+                dropdown.classList.toggle('show');
+            });
 
+            // Cierra el menú si se hace clic fuera de él
+            window.addEventListener('click', (e) => {
+                if (dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
         document.getElementById('reserveBtn')?.addEventListener('click', () => this.handleReservation());
         document.getElementById('clearSelectionBtn')?.addEventListener('click', () => this.clearSeatSelection());
         document.getElementById('backBtn')?.addEventListener('click', () => {
-            localStorage.removeItem(STORAGE_KEYS.CURRENT_EVENT);
+            sessionStorage.removeItem(STORAGE_KEYS.CURRENT_EVENT);
             this.router.navigate('events');
         });
         
         document.getElementById('zoomIn')?.addEventListener('click', () => this.pz && this.pz.zoomIn());
         document.getElementById('zoomOut')?.addEventListener('click', () => this.pz && this.pz.zoomOut());
         document.getElementById('zoomReset')?.addEventListener('click', () => this.pz && this.pz.reset());
+
     }
 
     async loadSeatsPage() {
-        const user = apiService.getCurrentUser();
+        const user = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.USER) || 'null');
         if (user) {
             const userNameDisplay = document.getElementById('userNameDisplay');
-            if (userNameDisplay) userNameDisplay.textContent = user.name || user.email;
+            if (userNameDisplay) userNameDisplay.textContent = user.name || 'Usuario';
         }
 
         if (!this.eventId) {
-            this.eventId = localStorage.getItem(STORAGE_KEYS.CURRENT_EVENT);
+            this.eventId = sessionStorage.getItem(STORAGE_KEYS.CURRENT_EVENT);
         }
 
         if (!this.eventId || this.eventId === 'undefined' || this.eventId === 'null') {
@@ -58,7 +72,7 @@ export class SeatsController {
             return;
         }
 
-        localStorage.setItem(STORAGE_KEYS.CURRENT_EVENT, this.eventId);
+        sessionStorage.setItem(STORAGE_KEYS.CURRENT_EVENT, this.eventId);
         await this.fetchAndDisplaySeats(this.eventId);
     }
 
@@ -72,9 +86,7 @@ export class SeatsController {
             if (mapContainer) mapContainer.style.opacity = '0';
             if (errorContainer) errorContainer.style.display = 'none';
 
-            const result = await apiService.getSeats(eventId);
-            this.allSeats = result.seats || [];
-
+            // 1. Obtener y mostrar la información del evento
             const eventsResult = await apiService.getEvents(1, 100);
             const eventDetails = eventsResult.events.find(e => e.id.toString() === eventId.toString());
 
@@ -82,13 +94,45 @@ export class SeatsController {
                 this.displayEventDetails(eventDetails);
             }
 
+            // 2. Obtener los asientos
+            const result = await apiService.getSeats(eventId);
+            this.allSeats = result.seats || [];
+
             if (this.allSeats.length === 0) {
                 throw new Error("No hay asientos configurados para este evento.");
             }
 
+            // 3. Renderizar el mapa
             this.renderSeatMap(this.allSeats);
-            this.initPanzoom();
 
+            // 4. Identificar y restaurar las reservas del usuario actual
+            const user = apiService.getCurrentUser();
+            if (user) {
+                const myReservedSeats = this.allSeats.filter(seat => 
+                    seat.status === 'Reserved' && seat.userId === user.id
+                );
+
+                if (myReservedSeats.length > 0) {
+                    this.selectedSeats = [...myReservedSeats];
+                    
+                    this.selectedSeats.forEach(seat => {
+                        const seatElement = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
+                        if (seatElement) {
+                            seatElement.classList.remove('reserved', 'available');
+                            seatElement.classList.add('selected');
+                        }
+                    });
+
+                    this.updateSelectionDisplay();
+
+                    const firstExpiration = this.selectedSeats[0].expiresAt;
+                    if (firstExpiration) {
+                        this.startCountdown(firstExpiration);
+                    }
+                }
+            }
+
+            this.initPanzoom();
             if (mapContainer) mapContainer.style.opacity = '1';
 
         } catch (error) {
@@ -229,7 +273,7 @@ export class SeatsController {
             minZoom: 0.5,
             bounds: true,
             boundsPadding: 0.1,
-            contain: 'outside'
+            contain: 'outside',
         });
         
         if (viewport) {
@@ -296,8 +340,10 @@ export class SeatsController {
                     // ACTUALIZACIÓN DE UI SIN RECARGAR
                     seatElement.classList.remove('loading-seat');
                     seatElement.classList.add('selected');
+                    if (this.reservationTimer === null) {
+                        this.startCountdown(response.expiresAt);
+                    }
                     
-                    this.startCountdown(response.expiresAt);
                     this.updateSelectionDisplay();
                     
                     // Solo un log o alerta pequeña para no interrumpir
@@ -313,22 +359,38 @@ export class SeatsController {
             }
         }
     }
-    startCountdown(expiresAt) {
+    startCountdown(expirationTimestamp) {
         if (this.reservationTimer) clearInterval(this.reservationTimer);
-        const expirationDate = new Date().getTime() + (5 * 60 * 1000);
 
-        this.reservationTimer = setInterval(() => {
-            const now = new Date().getTime();
-            const distance = expirationDate - now;
+        // Asegurar que el string se trate como UTC agregando 'Z' si falta
+        let dateStr = expirationTimestamp;
+        if (typeof dateStr === 'string' && !dateStr.includes('Z') && !dateStr.includes('+')) {
+            dateStr += 'Z';
+        }
 
-            if (distance < 0) {
+        let expirationDate = new Date(dateStr).getTime();
+        const now = new Date().getTime();
+
+        // Si la fecha es inválida o el desfasaje es ilógico (ej. más de 24hs), usar 5 min locales
+        if (isNaN(expirationDate) || Math.abs(expirationDate - now) > 86400000) {
+            expirationDate = now + (5 * 60 * 1000);
+        }
+
+        const update = () => {
+            const currentTime = new Date().getTime();
+            const distance = expirationDate - currentTime;
+
+            if (distance <= 0) {
                 clearInterval(this.reservationTimer);
+                this.reservationTimer = null;
                 this.handleExpiration();
                 return;
             }
-
             this.updateTimerUI(distance);
-        }, 1000);
+        };
+
+        update(); // Ejecución inmediata
+        this.reservationTimer = setInterval(update, 1000);
     }
     updateTimerUI(distance) {
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -341,21 +403,37 @@ export class SeatsController {
         }
     }
     checkTimerStatus() {
-    // Si no quedan asientos seleccionados, detenemos y limpiamos el timer
-    if (this.selectedSeats.length === 0 && this.reservationTimer) {
-        clearInterval(this.reservationTimer);
-        this.reservationTimer = null;
+        // Si no quedan asientos seleccionados, detenemos y limpiamos el timer
+        if (this.selectedSeats.length === 0 && this.reservationTimer) {
+            clearInterval(this.reservationTimer);
+            this.reservationTimer = null;
+            
+            const timerEl = document.getElementById('reservationTimer');
+            if (timerEl) {
+                timerEl.textContent = '';
+            }
+        }
+    }
+    handleExpiration() {
+        showAlert("Tu reserva ha expirado", "warning");
+        
+        // Liberar asientos localmente mediante manipulación del DOM (sin recargar)
+        this.selectedSeats.forEach(seat => {
+            const seatElement = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
+            if (seatElement) {
+                seatElement.classList.remove('selected');
+                seatElement.classList.add('available');
+            }
+        });
+        
+        this.selectedSeats = [];
+        this.updateSelectionDisplay();
         
         const timerEl = document.getElementById('reservationTimer');
         if (timerEl) {
             timerEl.textContent = '';
+            timerEl.classList.remove('timer-warning');
         }
-    }
-}
-    handleExpiration() {
-        showAlert("Tu reserva ha expirado", "warning");
-        this.selectedSeats = [];
-        this.fetchAndDisplaySeats(this.eventId); // Recargar mapa para ver asientos liberados
     }
     clearSeatSelection() {
         const selected = document.querySelector('.seat.selected');
