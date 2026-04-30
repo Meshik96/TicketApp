@@ -2,9 +2,12 @@
 export const API_CONFIG = {
     BASE_URL: 'https://localhost:7239',
     ENDPOINTS: {
-        EVENTS: '/api/v1/events',
-        SEATS: (eventId) => `/api/v1/events/${eventId}/seats`,
-        RESERVE: '/api/v1/reservations'
+        EVENTS: '/api/events',
+        SEATS: (eventId) => `/api/seats/event/${eventId}`,
+        RESERVATIONS: '/api/reservations',
+        SEATS_PURCHASE: '/api/seats/purchase',
+        USERS: '/api/users',
+        USER_BY_ID: (userId) => `/api/users/${userId}`
     }
 };
 

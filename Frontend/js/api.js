@@ -9,7 +9,7 @@ class ApiService {
      * Get stored authentication token
      */
     getToken() {
-        const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || '{}');
+        const user = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.USER) || '{}');
         return user.token || null;
     }
 
@@ -17,9 +17,9 @@ class ApiService {
      * Set authentication token
      */
     setToken(token) {
-        const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || '{}');
+        const user = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.USER) || '{}');
         user.token = token;
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+        sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
         this.token = token;
     }
 
@@ -88,7 +88,7 @@ class ApiService {
                 token: 'demo-token-' + Date.now()
             };
             
-            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+            sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
             this.setToken(user.token);
             
             return { success: true, user };
@@ -145,7 +145,7 @@ class ApiService {
      */
     async reserveSeat(userId, seatId) {
         try {
-            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.RESERVE}`;
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.RESERVATIONS}`;
             
             const payload = {
                 userId: parseInt(userId),
@@ -154,7 +154,7 @@ class ApiService {
             
             const response = await fetch(url, {
                 method: 'POST',
-                headers: this.getHeaders(),
+                headers: this.getHeaders(true),
                 body: JSON.stringify(payload)
             });
             
@@ -165,28 +165,37 @@ class ApiService {
         }
     }
 
+    /**
+     * Buy seats - confirms the purchase
+     */
     async buySeats(userId, seatIds) {
-        const response = await fetch(`${this.baseUrl}/api/v1/buy`, { // Ajusta la ruta base según tu controller
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.getToken()}` // Si usas JWT
-            },
-            body: JSON.stringify({ userId, seatIds })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.text();
-            throw new Error(errorData || 'Error en la compra');
+        try {
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.SEATS_PURCHASE}`;
+            
+            const payload = {
+                userId: parseInt(userId),
+                seatIds: seatIds
+            };
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: this.getHeaders(true),
+                body: JSON.stringify(payload)
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error buying seats:', error);
+            throw error;
         }
-
-        return response.json();
     }
 
+    /**
+     * Cancel a reservation
+     */
     async cancelReservation(userId, seatId) {
         try {
-            // Usamos la constante del endpoint y concatenamos los query params
-            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.RESERVE}?seatId=${seatId}&userId=${parseInt(userId)}`;
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.RESERVATIONS}?seatId=${seatId}&userId=${parseInt(userId)}`;
             
             const response = await fetch(url, {
                 method: 'DELETE',
@@ -199,14 +208,92 @@ class ApiService {
             throw error;
         }
     }
+
+    /**
+     * Get all users
+     */
+    async getUsers() {
+        try {
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.USERS}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: this.getHeaders(true)
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get user by ID
+     */
+    async getUserById(userId) {
+        try {
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.USER_BY_ID(userId)}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: this.getHeaders(true)
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Create a new user
+     */
+    async createUser(userData) {
+        try {
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.USERS}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: this.getHeaders(true),
+                body: JSON.stringify(userData)
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error creating user:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update an existing user
+     */
+    async updateUser(userId, userData) {
+        try {
+            const url = `${this.baseUrl}${API_CONFIG.ENDPOINTS.USER_BY_ID(userId)}`;
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: this.getHeaders(true),
+                body: JSON.stringify(userData)
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error updating user:', error);
+            throw error;
+        }
+    }
     
     /**
      * Logout
      */
     logout() {
-        localStorage.removeItem(STORAGE_KEYS.USER);
-        localStorage.removeItem(STORAGE_KEYS.CURRENT_EVENT);
-        localStorage.removeItem(STORAGE_KEYS.SELECTED_SEAT);
+        sessionStorage.removeItem(STORAGE_KEYS.USER);
+        sessionStorage.removeItem(STORAGE_KEYS.CURRENT_EVENT);
+        sessionStorage.removeItem(STORAGE_KEYS.SELECTED_SEAT);
         this.token = null;
     }
 
@@ -214,7 +301,7 @@ class ApiService {
      * Check if user is logged in
      */
     isLoggedIn() {
-        const user = localStorage.getItem(STORAGE_KEYS.USER);
+        const user = sessionStorage.getItem(STORAGE_KEYS.USER);
         return !!user;
     }
 
@@ -222,7 +309,7 @@ class ApiService {
      * Get current user
      */
     getCurrentUser() {
-        const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
+        const user = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.USER) || 'null');
         return user;
     }
 }

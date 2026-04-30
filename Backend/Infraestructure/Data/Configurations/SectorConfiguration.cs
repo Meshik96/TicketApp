@@ -51,8 +51,8 @@ public class SectorConfiguration : IEntityTypeConfiguration<Sector>
 
             // Evento 6: Torneo Dota 2 Regional (Estadio de E-sports - VIP adelante, General atrás)
             new Sector { Id = 16, EventId = 6, Name = "Palcos Pro-Player", Price = 120.00m, Capacity = 20, GridX = 0, GridY = 0 },
-            new Sector { Id = 17, EventId = 6, Name = "Tribuna Lateral Norte", Price = 45.00m, Capacity = 120, GridX = -1, GridY = 1 },
-            new Sector { Id = 18, EventId = 6, Name = "Tribuna Lateral Sur", Price = 45.00m, Capacity = 120, GridX = 1, GridY = 1 },
+            new Sector { Id = 17, EventId = 6, Name = "Tribuna Lateral Izquierda", Price = 45.00m, Capacity = 120, GridX = -1, GridY = 1 },
+            new Sector { Id = 18, EventId = 6, Name = "Tribuna Lateral Derecha", Price = 45.00m, Capacity = 120, GridX = 1, GridY = 1 },
 
             // Evento 7: Clase Magistral de Japonés (Salón de usos múltiples - Sector único)
             new Sector { Id = 19, EventId = 7, Name = "Platea Única", Price = 25.00m, Capacity = 80, GridX = 0, GridY = 0 },

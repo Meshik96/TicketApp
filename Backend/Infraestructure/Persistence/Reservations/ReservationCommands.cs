@@ -30,7 +30,20 @@ public class ReservationCommands : IReservationCommands
                     throw new InvalidOperationException("Seat not found");
 
                 if (seat.Status != "Available")
+                {
+                    var auditLog3 = new AuditLog
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Action = "RESERVE_SEAT_FAILED",
+                        EntityType = "Seat",
+                        EntityId = seatId.ToString(),
+                        Details = $"User {userId} failed to reserve seat {seatId}, seat is {seat.Status}",
+                        CreatedAt = DateTime.UtcNow
+                    };
                     throw new InvalidOperationException($"Seat is already {seat.Status}");
+                }
+                    
 
                 // verify user exists
                 var user = await _context.Users
@@ -62,7 +75,7 @@ public class ReservationCommands : IReservationCommands
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
-                    Action = "RESERVE_SEAT",
+                    Action = "RESERVE_SEAT_SUCCESS",
                     EntityType = "Seat",
                     EntityId = seatId.ToString(),
                     Details = $"Seat: {seat.RowIdentifier}{seat.SeatNumber}, in Sector: {seat.SectorId}, in Event: {seat.Sector.EventId}, reserved by User {userId}",
