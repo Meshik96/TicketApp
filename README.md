@@ -54,6 +54,9 @@ ERR_CONNECTION_REFUSED: Verifique que la ventana de la consola del Backend esté
 
 Puerto 5500 ocupado: Si recibe el error EADDRINUSE, cierre cualquier instancia de VS Code (Live Server) abierta o ejecute taskkill /F /IM node.exe en la terminal.
 
-5. Tecnologías Utilizadas
+5. Tecnologías Utilizadas.
+```
 Backend: C#, .NET 10.0, Entity Framework Core, SQL Server.
+
 Frontend: HTML, CSS, JavaScript.
+```
