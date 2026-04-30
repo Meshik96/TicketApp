@@ -47,14 +47,14 @@ Ejecútelo con doble clic. El script realizará lo siguiente:
 
 3.Abrirá automáticamente el navegador en la dirección del proyecto.
 ```
-4. Solución de Problemas Comunes
+5. Solución de Problemas Comunes
 Error CORS (ERR_FAILED): Asegúrese de estar accediendo vía http://localhost:5500 y no a través de una dirección IP , a menos que dicha IP esté explícitamente habilitada en la política de CORS en Program.cs.
 
 ERR_CONNECTION_REFUSED: Verifique que la ventana de la consola del Backend esté abierta y no muestre errores de compilación o de conexión a la base de datos.
 
 Puerto 5500 ocupado: Si recibe el error EADDRINUSE, cierre cualquier instancia de VS Code (Live Server) abierta o ejecute taskkill /F /IM node.exe en la terminal.
 
-5. Tecnologías Utilizadas.
+6. Tecnologías Utilizadas.
 ```
 Backend: C#, .NET 10.0, Entity Framework Core, SQL Server.
 
