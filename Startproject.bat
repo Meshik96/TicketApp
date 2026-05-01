@@ -6,7 +6,7 @@ echo ==========================================
 
 :: 1. Levantar el Backend
 echo [1/2] Iniciando Backend .NET...
-start "Backend API" cmd /k "dotnet run --project Backend/API/API.csproj"
+start "Backend API" cmd /k "dotnet run --project Backend/API/API.csproj --launch-profile https"
 
 :: Esperar a que el backend esté listo
 timeout /t 5 /nobreak > nul
