@@ -3,6 +3,6 @@
     <Project Path="Backend/API/API.csproj" />
     <Project Path="Backend/Application/Application.csproj" />
     <Project Path="Backend/Domain/Domain.csproj" />
-    <Project Path="Backend/Infraestructure/Infrastructure.csproj" />
+    <Project Path="Backend/Infrastructure/Infrastructure.csproj" />
   </Folder>
 </Solution>

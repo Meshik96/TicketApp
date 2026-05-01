@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-    BASE_URL: 'https://localhost:7239',
+    BASE_URL: 'http://localhost:5127',
     ENDPOINTS: {
         EVENTS: '/api/events',
         SEATS: (eventId) => `/api/seats/event/${eventId}`,
