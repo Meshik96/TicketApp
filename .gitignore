@@ -363,7 +363,3 @@ MigrationBackup/
 FodyWeavers.xsd
 /Backend/Infraestructure/Migrations/
 
-/Backend/Infraestructure/Migrations/20260420230715_InitialCreate.Designer.cs
-/Backend/Infrastructure/Migrations/20260428010812_new-events.cs
-/Backend/Infrastructure/Migrations/20260430024515_user-update.cs
-/Backend/Infrastructure/Migrations/AppDbContextModelSnapshot.cs
