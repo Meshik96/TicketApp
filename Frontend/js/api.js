@@ -48,7 +48,8 @@ class ApiService {
             
             try {
                 const errorData = await response.json();
-                errorMessage = errorData.message || errorMessage;
+                // Modificación: buscar errorData.error
+                errorMessage = errorData.message || errorData.error || errorMessage;
             } catch (e) {
                 errorMessage = `Error ${response.status}: ${response.statusText}`;
             }
@@ -311,6 +312,25 @@ class ApiService {
     getCurrentUser() {
         const user = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.USER) || 'null');
         return user;
+    }
+
+    /**
+     * Get user reservations
+     */
+    async getUserReservations(userId) {
+        try {
+            const url = `${this.baseUrl}/api/users/${userId}/reservations`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: this.getHeaders(true)
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error fetching user reservations:', error);
+            throw error;
+        }
     }
 }
 
