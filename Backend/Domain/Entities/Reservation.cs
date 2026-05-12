@@ -13,7 +13,9 @@ namespace Domain.Entities
         public DateTime ReservedAt { get; set; }
         public DateTime ExpiresAt { get; set; }
 
+        // Navigation properties
         public User User { get; set; } = null!;
         public Seat Seat { get; set; } = null!;
+        public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
     }
 }
