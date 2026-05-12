@@ -15,9 +15,9 @@ public class ReservationService : IReservationService
         _reservationQueries = reservationQueries;
     }
 
-    public async Task<ReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId)
+    public async Task<ReservationResponse> ReserveSeatsAsync(int userId, Guid seatId)
     {
-        return await _reservationCommands.ReserveSeatsNaiveAsync(userId, seatId);
+        return await _reservationCommands.ReserveSeatsAsync(userId, seatId);
     }
     public async Task<bool> ValidateReservationAsync(int userId, Guid seatId)
     {

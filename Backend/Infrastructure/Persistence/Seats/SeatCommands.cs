@@ -28,29 +28,24 @@ namespace Infrastructure.Persistence.Seats
                     foreach (var seat in seats)
                     {
                         seat.Status = "Sold";
-                        var auditlog = new AuditLog
+
+                        // Cambiar estado de la reserva a "Paid" en lugar de eliminarla
+                        if (seat.Reservation != null)
+                        {
+                            seat.Reservation.Status = "Paid";
+                        }
+
+                        var auditLog = new AuditLog
                         {
                             Id = Guid.NewGuid(),
                             UserId = userId,
-                            Action = "REMOVE_SEAT_RESERVATION(SOLD)",
-                            EntityType = "Reservation",
-                            EntityId = seat.Reservation.Id.ToString(),
-                            Details = $"Reservation removed for Seat {seat.RowIdentifier}{seat.SeatNumber} by User {userId} (Sold)",
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        _context.AuditLogs.Add(auditlog);
-                        _context.Reservations.Remove(seat.Reservation);
-                        var auditLog2 = new AuditLog
-                        {
-                            Id = Guid.NewGuid(),
-                            UserId = userId,
+                            SeatId = seat.Id,
+                            ReservationId = seat.Reservation?.Id,
                             Action = "BUY_SEAT",
-                            EntityType = "Seat",
-                            EntityId = seat.Id.ToString(),
                             Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber} in Sector {seat.SectorId} in event {seat.Sector.EventId} bought by User {userId}",
                             CreatedAt = DateTime.UtcNow
                         };
-                        _context.AuditLogs.Add(auditLog2);
+                        _context.AuditLogs.Add(auditLog);
                     }
                     _context.Seats.UpdateRange(seats);
                     // Aquí podrías agregar lógica para insertar registros en una tabla de Ventas/Tickets
@@ -70,58 +65,44 @@ namespace Infrastructure.Persistence.Seats
             var now = DateTime.UtcNow;
             const int systemUserId = 0; // ID reservado para procesos automáticos
 
-            // 1. Identificar reservas y asientos afectados
-            var expiredData = await _context.Reservations
-                .Where(r => r.ExpiresAt < now)
-                .Select(r => new { r.Id, r.SeatId })
+            // 1. query
+            var expiredReservations = await _context.Reservations
+                .Where(r => r.ExpiresAt < now && r.Status == "Pending")
                 .ToListAsync();
 
-            if (!expiredData.Any()) return;
+            if (!expiredReservations.Any()) return;
 
-            var seatIds = expiredData.Select(x => x.SeatId).ToList();
-            var reservationIds = expiredData.Select(x => x.Id).ToList();
+            var seatIds = expiredReservations.Select(x => x.SeatId).ToList();
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 2. Actualización masiva de asientos
+                // 2. update seats
                 await _context.Seats
                     .Where(s => seatIds.Contains(s.Id))
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(s => s.Status, "Available"));
 
-                // 3. Eliminación masiva de reservas
+                // 3. update reservations to "Expired"
                 await _context.Reservations
-                    .Where(r => reservationIds.Contains(r.Id))
-                    .ExecuteDeleteAsync();
+                    .Where(r => r.ExpiresAt < now && r.Status == "Pending")
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(r => r.Status, "Expired"));
 
-                // 4. Auditoría
+                // 4. audit
                 var auditLogs = new List<AuditLog>();
 
-                foreach (var data in expiredData)
+                foreach (var reservation in expiredReservations)
                 {
-                    // Log para la Reserva
                     auditLogs.Add(new AuditLog
                     {
                         Id = Guid.NewGuid(),
                         UserId = null,
-                        Action = "EXPIRE_RESERVATION",
-                        EntityType = "Reservation",
-                        EntityId = data.Id.ToString(),
-                        Details = "Reserva expirada automáticamente por el sistema.",
-                        CreatedAt = now
-                    });
-
-                    // Log para el Asiento
-                    auditLogs.Add(new AuditLog
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = null,
+                        SeatId = reservation.SeatId,
+                        ReservationId = reservation.Id,
                         Action = "RELEASE_SEAT",
-                        EntityType = "Seat",
-                        EntityId = data.SeatId.ToString(),
                         Details = "Asiento liberado por expiración de reserva.",
-                        CreatedAt = now
+                        CreatedAt = DateTime.UtcNow
                     });
                 }
 
