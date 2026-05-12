@@ -17,7 +17,9 @@ namespace Domain.Entities
         [ConcurrencyCheck]
         public int Version { get; set; }
 
+        // Navigation properties
         public Sector Sector { get; set; } = null!;
         public Reservation? Reservation { get; set; }
+        public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
     }
 }

@@ -19,12 +19,20 @@ export class SeatsController {
         if (mapContainer) {
             mapContainer.addEventListener('click', (e) => {
                 const seatElement = e.target.closest('.seat');
-                if (seatElement && seatElement.classList.contains('available')) {
-                e.preventDefault(); // Bloquea recargas accidentales
-                e.stopPropagation(); // Evita que el evento suba a otros padres
                 
-                this.selectSeat(seatElement);
-            }
+                // Limpiar error container cuando el usuario interactúa
+                const errorContainer = document.getElementById('errorContainer');
+                if (errorContainer) {
+                    errorContainer.style.display = 'none';
+                    errorContainer.textContent = '';
+                }
+                
+                if (seatElement && seatElement.classList.contains('available')) {
+                    e.preventDefault(); // Bloquea recargas accidentales
+                    e.stopPropagation(); // Evita que el evento suba a otros padres
+                    
+                    this.selectSeat(seatElement);
+                }
             });
         }
         const menuBtn = document.getElementById('userMenuBtn');
@@ -54,6 +62,27 @@ export class SeatsController {
         document.getElementById('zoomOut')?.addEventListener('click', () => this.pz && this.pz.zoomOut());
         document.getElementById('zoomReset')?.addEventListener('click', () => this.pz && this.pz.reset());
 
+        // Modal de éxito de compra
+        document.getElementById('backToEventsBtn')?.addEventListener('click', () => {
+            this.closeAllModals();
+            sessionStorage.removeItem(STORAGE_KEYS.CURRENT_EVENT);
+            this.router.navigate('events');
+        });
+
+        document.getElementById('continueShoppingBtn')?.addEventListener('click', () => {
+            this.closeAllModals();
+            this.loadSeatsPage();
+        });
+
+        document.getElementById('viewReservationsBtn')?.addEventListener('click', () => {
+            this.closeAllModals();
+            this.router.navigate('reservations');
+        });
+
+        // Modal de error de compra
+        document.getElementById('closeErrorBtn')?.addEventListener('click', () => {
+            this.closeAllModals();
+        });
     }
 
     async loadSeatsPage() {
@@ -316,6 +345,7 @@ export class SeatsController {
             catch (error) {
                 console.error("Error al cancelar:", error);
                 alert("No se pudo liberar el asiento. Intente de nuevo.");
+                showErrorModal("El asiento ya ha sido reservado por otro usuario: " + error.message);
             }
         } 
         else {
@@ -346,16 +376,13 @@ export class SeatsController {
                     
                     this.updateSelectionDisplay();
                     
-                    // Solo un log o alerta pequeña para no interrumpir
-                    console.log(`Asiento ${seatId} reservado hasta ${response.expiresAt}`);
                 }
             } 
             catch (error) {
-                console.error('Error al reservar:', error);
                 // REVERTIR CAMBIOS SI FALLA
                 seatElement.classList.remove('loading-seat');
-                seatElement.classList.add('available');
-                showAlert(error.message || "No se pudo reservar el asiento", 'danger');
+                seatElement.classList.add('reserved');
+                this.showErrorModal(error.message || 'No se pudo reservar el asiento. Intenta nuevamente.');
             }
         }
     }
@@ -415,7 +442,7 @@ export class SeatsController {
         }
     }
     handleExpiration() {
-        showAlert("Tu reserva ha expirado", "warning");
+        this.showErrorModal("El tiempo de reserva ha expirado. Los asientos seleccionados han sido liberados.");
         
         // Liberar asientos localmente mediante manipulación del DOM (sin recargar)
         this.selectedSeats.forEach(seat => {
@@ -515,7 +542,8 @@ export class SeatsController {
             buyBtn.textContent = 'PROCESANDO...';
 
             // Llamada al backend
-            await apiService.buySeats(user.id, seatIds);
+            debugger;
+            const response = await apiService.buySeats(user.id, seatIds);
 
             // Detener el temporizador de expiración
             if (this.reservationTimer) {
@@ -523,20 +551,18 @@ export class SeatsController {
                 document.getElementById('reservationTimer').textContent = '';
             }
 
-            showAlert("Compra realizada con éxito", "success");
+            // Mostrar modal de éxito con detalles de la compra
+            this.showSuccessModal(response);
 
-            // Limpiar selección y redirigir
+            // Limpiar selección
             this.selectedSeats = [];
             this.updateSelectionDisplay();
-            
-            // Redirigir a la vista principal o mis tickets
-            setTimeout(() => {
-                this.router.navigate('events'); 
-            }, 1500);
 
         } catch (error) {
             console.error('Error en la compra:', error);
-            showAlert(error.message || "Error al procesar la compra", "danger");
+            
+            // Mostrar modal de error (el backend ya está manejando el error)
+            this.showErrorModal(error.message || 'Ha ocurrido un error al procesar tu compra. Intenta nuevamente.');
             
             // Restaurar botón si falla
             buyBtn.disabled = false;
@@ -549,4 +575,65 @@ export class SeatsController {
         }
     }
 
+    showSuccessModal(response) {
+        const modal = document.getElementById('purchaseSuccessModal');
+        if (!modal) return;
+
+        const reservationDetails = document.getElementById('reservationDetails');
+        
+        // Construir detalles de la compra
+        let detailsHtml = '<div class="details-box">';
+        
+        if (response.bookingIds && response.bookingIds.length > 0) {
+            detailsHtml += `<p><strong>Número(s) de Reserva:</strong> ${response.bookingIds.join(', ')}</p>`;
+        }
+        
+        if (this.selectedSeats && this.selectedSeats.length > 0) {
+            detailsHtml += '<p><strong>Asientos:</strong></p><ul>';
+            this.selectedSeats.forEach(seat => {
+                detailsHtml += `<li>${seat.sectorName} - Fila ${seat.rowIdentifier} - Asiento ${seat.seatNumber}</li>`;
+            });
+            detailsHtml += '</ul>';
+        }
+        
+        if (response.totalAmount !== undefined) {
+            detailsHtml += `<p><strong>Monto Total:</strong> $${response.totalAmount.toLocaleString('es-AR')}</p>`;
+        }
+        
+        detailsHtml += '</div>';
+        
+        if (reservationDetails) {
+            reservationDetails.innerHTML = detailsHtml;
+        }
+
+        // Mostrar el modal
+        modal.style.display = 'flex';
+    }
+
+    showErrorModal(errorMessage) {
+        const modal = document.getElementById('purchaseErrorModal');
+        if (!modal) return;
+
+        const errorMessageEl = document.getElementById('errorMessage');
+        if (errorMessageEl) {
+            errorMessageEl.textContent = errorMessage;
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    closeAllModals() {
+        const modals = [
+            'purchaseSuccessModal',
+            'purchaseErrorModal',
+            'loginModal'
+        ];
+
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
 }

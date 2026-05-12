@@ -4,6 +4,6 @@ namespace Application.Interfaces.Persistence.Reservations;
 
 public interface IReservationCommands
 {
-    Task<ReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId);
+    Task<ReservationResponse> ReserveSeatsAsync(int userId, Guid seatId);
     Task DeleteReservationAsync(Guid reservationId);
 }

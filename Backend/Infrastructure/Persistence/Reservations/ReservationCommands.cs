@@ -15,101 +15,116 @@ public class ReservationCommands : IReservationCommands
         _context = context;
     }
 
-    public async Task<ReservationResponse> ReserveSeatsNaiveAsync(int userId, Guid seatId)
+    public async Task<ReservationResponse> ReserveSeatsAsync(int userId, Guid seatId)
     {
-        using (var transaction = await _context.Database.BeginTransactionAsync())
+        try
         {
-            try
+            var seat = await _context.Seats
+                .Include(s => s.Sector)
+                .Include(s => s.Sector.Event)
+                .FirstOrDefaultAsync(s => s.Id == seatId);
+
+            if (seat == null)
+                throw new KeyNotFoundException("Seat not found");
+
+            if (seat.Status != "Available")
             {
-                // obtain seat
-                var seat = await _context.Seats
-                    .Include(s => s.Sector)
-                    .FirstOrDefaultAsync(s => s.Id == seatId);
-
-                if (seat == null)
-                    throw new InvalidOperationException("Seat not found");
-
-                if (seat.Status != "Available")
+                var expiredReservation = await _context.Reservations
+                    .Where(r => r.SeatId == seatId && r.ExpiresAt < DateTime.UtcNow && r.Status == "Pending")
+                    .FirstOrDefaultAsync();
+                if (expiredReservation != null) //JIT release 
                 {
-                    var auditLog3 = new AuditLog
+                    // Cambiar estado de la reserva expirada a "Expired"
+                    expiredReservation.Status = "Expired";
+                    seat.Status = "Available";
+                    seat.Version++;
+                    await _context.AuditLogs.AddAsync(new AuditLog
                     {
                         Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Action = "RESERVE_SEAT_FAILED",
-                        EntityType = "Seat",
-                        EntityId = seatId.ToString(),
-                        Details = $"User {userId} failed to reserve seat {seatId}, seat is {seat.Status}",
+                        UserId = null,
+                        SeatId = seatId,
+                        ReservationId = expiredReservation.Id,
+                        Action = "RELEASE_SEAT_JIT",
+                        Details = $"Asiento liberado JIT durante nueva reserva.",
                         CreatedAt = DateTime.UtcNow
-                    };
-                    throw new InvalidOperationException($"Seat is already {seat.Status}");
+                    });
+                    await _context.SaveChangesAsync();
                 }
-                    
-
-                // verify user exists
-                var user = await _context.Users
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (user == null)
-                    throw new InvalidOperationException("User not found");
-
-                // change seat status
-                seat.Status = "Reserved";
-                _context.Seats.Update(seat);
-
-                // create reservation
-                var reservation = new Reservation
+                else //reservation failed
                 {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    SeatId = seatId,
-                    Status = "Pending",
-                    ReservedAt = DateTime.UtcNow,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(5) // 
-                };
-
-                await _context.Reservations.AddAsync(reservation);
-
-                // auditlog entries
-                var auditLog = new AuditLog
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    Action = "RESERVE_SEAT_SUCCESS",
-                    EntityType = "Seat",
-                    EntityId = seatId.ToString(),
-                    Details = $"Seat: {seat.RowIdentifier}{seat.SeatNumber}, in Sector: {seat.SectorId}, in Event: {seat.Sector.EventId}, reserved by User {userId}",
-                    CreatedAt = DateTime.UtcNow
-                };
-                var auditLog2 = new AuditLog
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    Action = "CREATE_RESERVATION",
-                    EntityType = "Reservation",
-                    EntityId = reservation.Id.ToString(),
-                    Details = $"Reservation created for Seat: {seat.Id} , by User {userId}",
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _context.AuditLogs.AddAsync(auditLog);
-                await _context.AuditLogs.AddAsync(auditLog2);
-
-                // save all changes
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return new ReservationResponse
-                {
-                    ReservationId = reservation.Id,
-                    SeatStatus = "Reserved"
-                };
+                    await LogFailureAsync(userId, seatId, $"Seat is already {seat.Status}");
+                    throw new InvalidOperationException("SEAT_UNAVAILABLE");
+                }
             }
-            catch (Exception ex)
+
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+                throw new KeyNotFoundException("User not found");
+
+            seat.Status = "Reserved";
+            seat.Version++;
+
+            var reservation = new Reservation
             {
-                await transaction.RollbackAsync();
-                throw;
-            }
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                SeatId = seatId,
+                Status = "Pending",
+                ReservedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(5)
+            };
+
+            await _context.Reservations.AddAsync(reservation);
+
+            var auditLog = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                SeatId = seatId,
+                ReservationId = reservation.Id,
+                Action = "RESERVE_SEAT_SUCCESS",
+                Details = $"Seat: {seat.RowIdentifier}{seat.SeatNumber}, Sector: {seat.SectorId}, Event: {seat.Sector.EventId}, reserved by User: {userId}",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.AuditLogs.AddAsync(auditLog);
+            await _context.SaveChangesAsync();
+
+            return new ReservationResponse
+            {
+                ReservationId = reservation.Id,
+                SeatStatus = "Reserved"
+            };
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            await LogFailureAsync(userId, seatId, "Concurrency conflict: Seat was modified by another transaction");
+            throw new InvalidOperationException("CONCURRENCY_CONFLICT");
+        }
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate key") == true || ex.InnerException?.Message.Contains("IX_Reservations_SeatId") == true)
+        {
+            await LogFailureAsync(userId, seatId, "Concurrency conflict: Another reservation for this seat already exists");
+            throw new InvalidOperationException("CONCURRENCY_CONFLICT");
+        }
+    }
+
+    private async Task LogFailureAsync(int userId, Guid seatId, string details)
+    {
+        _context.ChangeTracker.Clear();
+
+        var auditLog = new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            SeatId = seatId,
+            ReservationId = null,
+            Action = "RESERVE_SEAT_FAILED",
+            Details = details,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.AuditLogs.AddAsync(auditLog);
+        await _context.SaveChangesAsync();
     }
     public async Task DeleteReservationAsync(Guid reservationId)
     {
@@ -117,35 +132,26 @@ public class ReservationCommands : IReservationCommands
             .FirstOrDefaultAsync(r => r.Id == reservationId);
         
         var seat = await _context.Seats
+            .Include(s => s.Sector)
             .FirstOrDefaultAsync(s => s.Id == reservation.SeatId);
        
         var auditLog = new AuditLog
         {
             Id = Guid.NewGuid(),
             UserId = reservation.UserId,
-            Action = "RELEASE_SEAT",
-            EntityType = "Seat",
-            EntityId = reservation.SeatId.ToString(),
-            Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber} released manually by User {reservation.UserId}",
+            SeatId = reservation.SeatId,
+            ReservationId = null,
+            Action = "REMOVE_SEAT_RESERVATION",
+            Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber}, Sector: {seat.SectorId}, Event: {seat.Sector.EventId} released manually by User: {reservation.UserId}",
             CreatedAt = DateTime.UtcNow
         };
         await _context.AuditLogs.AddAsync(auditLog);
         if (seat != null && seat.Status == "Reserved")
         {
             seat.Status = "Available";
-            _context.Seats.Update(seat);
+            seat.Version++;
         }
-        var auditLog2 = new AuditLog
-        {
-            Id = Guid.NewGuid(),
-            UserId = reservation.UserId,
-            Action = "REMOVE_SEAT_RESERVATION",
-            EntityType = "Reservation",
-            EntityId = reservation.Id.ToString(),
-            Details = $"Reservation removed for Seat {seat.RowIdentifier}{seat.SeatNumber} by User {reservation.UserId}",
-            CreatedAt = DateTime.UtcNow
-        };
-        await _context.AuditLogs.AddAsync(auditLog2);
+
         _context.Reservations.Remove(reservation);
         
        

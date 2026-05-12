@@ -116,18 +116,42 @@
             </main>
         </div>
 
-        <div id="successModal" class="modal" style="display: none;">
+        <!-- Purchase Success Modal -->
+        <div id="purchaseSuccessModal" class="modal" style="display: none;">
             <div class="modal-content modal-success">
                 <div class="modal-header">
-                    <h2>✓ ¡Reserva Exitosa!</h2>
+                    <h2>✓ ¡Compra Exitosa!</h2>
                 </div>
                 <div class="modal-body">
-                    <p id="successMessage">Tu asiento ha sido reservado correctamente.</p>
+                    <p id="successMessage" class="success-message-text">Tu compra ha sido procesada correctamente.</p>
                     <div id="reservationDetails" class="reservation-details"></div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer modal-footer-multi">
+                    <button id="backToEventsBtn" class="btn btn-secondary">
+                        Volver a Eventos
+                    </button>
                     <button id="continueShoppingBtn" class="btn btn-primary">
-                        Continuar Comprando
+                        Seguir Comprando
+                    </button>
+                    <button id="viewReservationsBtn" class="btn btn-success">
+                        Ver Mis Reservas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchase Error Modal -->
+        <div id="purchaseErrorModal" class="modal" style="display: none;">
+            <div class="modal-content modal-error">
+                <div class="modal-header modal-header-error">
+                    <h2>✗ Error en la Compra</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage" class="error-message-text">Ha ocurrido un error al procesar tu compra.</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="closeErrorBtn" class="btn btn-primary">
+                        Entendido
                     </button>
                 </div>
             </div>

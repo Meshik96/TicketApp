@@ -15,31 +15,25 @@ namespace API.Controllers
             _reservationService = reservationService;
         }
 
-        /// <summary>
-        /// POST: Versión "naive" que acepta un intento de reserva, cambia el estado de la butaca
-        /// y persiste el evento en AuditLog (sin control estricto de concurrencia)
-        /// </summary>
         [HttpPost]
-        public async Task<IActionResult> ReserveSeats([FromBody] ReservationRequest request)
+        public async Task<IActionResult> ReserveSeat([FromBody] ReservationRequest request)
         {
             try
             {
-                if (request.UserId <= 0)
-                    return BadRequest(new { message = "Invalid UserId" });
-
-                if (request.SeatId == Guid.Empty)
-                    return BadRequest(new { message = "Invalid SeatId" });
-
-                var result = await _reservationService.ReserveSeatsNaiveAsync(request.UserId, request.SeatId);
-                return Ok(result);
+                var response = await _reservationService.ReserveSeatsAsync(request.UserId, request.SeatId);
+                return StatusCode(201, response);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException ex) when (ex.Message is "SEAT_UNAVAILABLE" or "CONCURRENCY_CONFLICT")
             {
-                return Conflict(new { message = ex.Message });
+                return Conflict(new { error = "El asiento ya se encuentra reservado o no está disponible." });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+                return StatusCode(500, new { error = "Error interno del servidor." });
             }
         }
 

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TicketApp - Mis Reservas</title>
+        <link rel="stylesheet" href="CSS/styles.css" />
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="app-header">
+                <div class="header-content">
+                    🎫TicketApp
+                </div>
+                <div class="header-actions">
+                    <div class="user-menu-container">
+                        <button id="userMenuBtn" class="btn-menu">
+                            <i class="fas fa-ellipsis-v"></i> 
+                            <span class="dots-icon">&#8942;</span> 
+                        </button>
+                        
+                        <div id="userDropdown" class="dropdown-content">
+                            <div class="user-info-header">
+                                <span id="userNameDisplay">Usuario</span>
+                            </div>
+                            <a href="#" id="profileLink">Mi Perfil</a>
+                            <a href="#" id="settingsLink">Configuración</a>
+                            <hr>
+                            <a href="#" id="logoutBtn" class="logout-link">Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <!-- Reservations Section -->
+                <section class="reservations-section">
+                    <div class="section-header">
+                        <button id="backBtn" class="btn btn-secondary" style="margin-right: 15px;">
+                            ← Volver
+                        </button>
+                        Mis Reservas
+                    </div>
+
+                    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Cargando reservas...</p>
+                    </div>
+
+                    <div id="reservationsContainer" class="reservations-container">
+                        <!-- Reservations will be loaded here -->
+                    </div>
+
+                    <div id="errorContainer" class="error-message" style="display: none;"></div>
+
+                    <div id="emptyState" class="empty-state" style="display: none;">
+                        <p>No tienes reservas aún</p>
+                        <button id="browseEventsBtn" class="btn btn-primary">
+                            Ver Eventos
+                        </button>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <script type="module" src="JS/app.js"></script>
+    </body>
+</html>

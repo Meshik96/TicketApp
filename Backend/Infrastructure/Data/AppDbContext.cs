@@ -42,8 +42,11 @@ namespace Infrastructure.Data
                 .WithMany(sc => sc.Seats)
                 .HasForeignKey(s => s.SectorId);
 
+            modelBuilder.Entity<Seat>()
+                .Property(s => s.Status)
+                .IsConcurrencyToken();
+
             // Relación Seat -> Reservation (1:1)
-            // Según el diagrama, un asiento se asigna a una reserva
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.Seat)
                 .WithOne(s => s.Reservation)
@@ -60,7 +63,21 @@ namespace Infrastructure.Data
                 .HasOne(a => a.User)
                 .WithMany(u => u.AuditLogs)
                 .HasForeignKey(a => a.UserId)
-                .OnDelete(DeleteBehavior.SetNull); // Si se borra el usuario, el log queda
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relación Seat -> AuditLog (1:N)
+            modelBuilder.Entity<AuditLog>()
+                .HasOne(a => a.Seat)
+                .WithMany(s => s.AuditLogs)
+                .HasForeignKey(a => a.SeatId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relación Seat -> AuditLog (1:N)
+            modelBuilder.Entity<AuditLog>()
+                .HasOne(a => a.Reservation)
+                .WithMany(r => r.AuditLogs) 
+                .HasForeignKey(a => a.ReservationId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
