@@ -16,20 +16,30 @@ export class LoginController {
     }
 
     initListeners() {
-        this.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        // Solo agregar listeners si los elementos existen
+        if (this.loginForm) {
+            this.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        }
         
         // Cerrar modal al hacer clic fuera del contenido
-        window.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                this.hideModal();
-            }
-        });
+        if (this.modal) {
+            window.addEventListener('click', (e) => {
+                if (e.target === this.modal) {
+                    this.hideModal();
+                }
+            });
+        }
     }
 
     /**
      * Load users from backend and populate dropdown
      */
     async loadUsers() {
+        // Solo cargar usuarios si los elementos del modal existen
+        if (!this.userSelect || !this.usersLoadingSpinner) {
+            return;
+        }
+
         try {
             this.usersLoadingSpinner.style.display = 'block';
             this.userSelect.disabled = true;
@@ -51,9 +61,13 @@ export class LoginController {
             this.userSelect.disabled = false;
         } catch (error) {
             console.error('Error loading users:', error);
-            this.usersLoadingSpinner.style.display = 'none';
+            if (this.usersLoadingSpinner) {
+                this.usersLoadingSpinner.style.display = 'none';
+            }
             this.showError('Error cargando usuarios. Intenta nuevamente.');
-            this.userSelect.disabled = false;
+            if (this.userSelect) {
+                this.userSelect.disabled = false;
+            }
         }
     }
     
@@ -63,6 +77,8 @@ export class LoginController {
     async handleLogin(e) {
         e.preventDefault();
         
+        if (!this.userSelect || !this.passwordInput) return;
+
         const userId = this.userSelect.value;
         const password = this.passwordInput.value;
 
@@ -102,15 +118,21 @@ export class LoginController {
      * Show login modal
      */
     showModal() {
+        if (!this.modal) return;
         this.modal.style.display = 'flex';
-        this.loginForm.reset();
-        this.loginError.style.display = 'none';
+        if (this.loginForm) {
+            this.loginForm.reset();
+        }
+        if (this.loginError) {
+            this.loginError.style.display = 'none';
+        }
     }
 
     /**
      * Hide login modal
      */
     hideModal() {
+        if (!this.modal) return;
         this.modal.style.display = 'none';
     }
 
@@ -118,6 +140,7 @@ export class LoginController {
      * Show error message
      */
     showError(message) {
+        if (!this.loginError) return;
         this.loginError.textContent = message;
         this.loginError.style.display = 'block';
     }

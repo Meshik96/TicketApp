@@ -14,46 +14,53 @@ export class SeatsController {
         this.initListeners();
         this.loadSeatsPage();
     }
+
     initListeners() {
         const mapContainer = document.getElementById('seatMapContainer');
         if (mapContainer) {
             mapContainer.addEventListener('click', (e) => {
                 const seatElement = e.target.closest('.seat');
                 
-                // Limpiar error container cuando el usuario interactúa
                 const errorContainer = document.getElementById('errorContainer');
                 if (errorContainer) {
                     errorContainer.style.display = 'none';
                     errorContainer.textContent = '';
                 }
                 
-                if (seatElement && seatElement.classList.contains('available')) {
-                    e.preventDefault(); // Bloquea recargas accidentales
-                    e.stopPropagation(); // Evita que el evento suba a otros padres
-                    
-                    this.selectSeat(seatElement);
+                if (seatElement && (seatElement.classList.contains('available') || seatElement.classList.contains('selected'))) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.selectSeat(seatElement, e);
                 }
             });
         }
+
         const menuBtn = document.getElementById('userMenuBtn');
         const dropdown = document.getElementById('userDropdown');
+        const reservationsLink = document.getElementById('reservationsLink');
+
         if (menuBtn && dropdown) {
-            // Maneja la apertura/cierre del menú
             menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Evita que el evento suba al window
+                e.stopPropagation();
                 dropdown.classList.toggle('show');
             });
 
-            // Cierra el menú si se hace clic fuera de él
-            window.addEventListener('click', (e) => {
+            window.addEventListener('click', () => {
                 if (dropdown.classList.contains('show')) {
                     dropdown.classList.remove('show');
                 }
             });
         }
-        document.getElementById('reserveBtn')?.addEventListener('click', () => this.handleReservation());
-        document.getElementById('clearSelectionBtn')?.addEventListener('click', () => this.clearSeatSelection());
-        document.getElementById('backBtn')?.addEventListener('click', () => {
+        if (reservationsLink) {
+            reservationsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (dropdown) dropdown.classList.remove('show');
+                this.router.navigate('reservations');
+            });
+        }
+
+        document.getElementById('backBtn')?.addEventListener('click', async () => {
+            await this.releaseAllSelectedSeats();
             sessionStorage.removeItem(STORAGE_KEYS.CURRENT_EVENT);
             this.router.navigate('events');
         });
@@ -62,27 +69,25 @@ export class SeatsController {
         document.getElementById('zoomOut')?.addEventListener('click', () => this.pz && this.pz.zoomOut());
         document.getElementById('zoomReset')?.addEventListener('click', () => this.pz && this.pz.reset());
 
-        // Modal de éxito de compra
-        document.getElementById('backToEventsBtn')?.addEventListener('click', () => {
-            this.closeAllModals();
-            sessionStorage.removeItem(STORAGE_KEYS.CURRENT_EVENT);
-            this.router.navigate('events');
-        });
-
-        document.getElementById('continueShoppingBtn')?.addEventListener('click', () => {
-            this.closeAllModals();
-            this.loadSeatsPage();
-        });
-
-        document.getElementById('viewReservationsBtn')?.addEventListener('click', () => {
-            this.closeAllModals();
-            this.router.navigate('reservations');
-        });
-
-        // Modal de error de compra
         document.getElementById('closeErrorBtn')?.addEventListener('click', () => {
-            this.closeAllModals();
+            const errorModal = document.getElementById('purchaseErrorModal');
+            if (errorModal) {
+                errorModal.style.display = 'none';
+            }
         });
+
+        this.handleBeforeUnload = (e) => {
+            if (this.selectedSeats.length > 0) {
+                const user = apiService.getCurrentUser();
+                if (user) {
+                    this.selectedSeats.forEach(seat => {
+                        apiService.cancelReservationOnExit(user.id, seat.id);
+                    });
+                }
+            }
+        };
+
+        window.addEventListener('beforeunload', this.handleBeforeUnload);
     }
 
     async loadSeatsPage() {
@@ -115,7 +120,6 @@ export class SeatsController {
             if (mapContainer) mapContainer.style.opacity = '0';
             if (errorContainer) errorContainer.style.display = 'none';
 
-            // 1. Obtener y mostrar la información del evento
             const eventsResult = await apiService.getEvents(1, 100);
             const eventDetails = eventsResult.events.find(e => e.id.toString() === eventId.toString());
 
@@ -123,7 +127,6 @@ export class SeatsController {
                 this.displayEventDetails(eventDetails);
             }
 
-            // 2. Obtener los asientos
             const result = await apiService.getSeats(eventId);
             this.allSeats = result.seats || [];
 
@@ -131,10 +134,8 @@ export class SeatsController {
                 throw new Error("No hay asientos configurados para este evento.");
             }
 
-            // 3. Renderizar el mapa
             this.renderSeatMap(this.allSeats);
 
-            // 4. Identificar y restaurar las reservas del usuario actual
             const user = apiService.getCurrentUser();
             if (user) {
                 const myReservedSeats = this.allSeats.filter(seat => 
@@ -185,7 +186,7 @@ export class SeatsController {
         if (eventDateEl) eventDateEl.textContent = formatDate(event.eventDate);
         if (eventVenueEl) eventVenueEl.textContent = event.venue;
         if (eventImageEl) {
-        eventImageEl.src = event.imageUrl 
+            eventImageEl.src = event.imageUrl 
                 ? `${API_CONFIG.BASE_URL}${event.imageUrl}` 
                 : 'assets/images/placeholder.jpg';
             eventImageEl.alt = event.name;
@@ -201,7 +202,6 @@ export class SeatsController {
         const sectors = {};
         let minX = 0, maxX = 0, minY = 0, maxY = 0;
 
-        // Agrupar por sector y calcular límites espaciales del grid
         seats.forEach(seat => {
             const sId = seat.sectorId;
             if (!sectors[sId]) {
@@ -225,7 +225,6 @@ export class SeatsController {
             sectors[sId].rows[rowId].push(seat);
         });
 
-        // Contenedor principal de sectores configurado dinámicamente según coordenadas
         const gridContainer = document.createElement('div');
         gridContainer.className = 'sectors-grid-container';
         gridContainer.style.gridTemplateColumns = `repeat(${maxX - minX + 1}, auto)`;
@@ -234,7 +233,6 @@ export class SeatsController {
         for (const [sId, sector] of Object.entries(sectors)) {
             const sectorDiv = document.createElement('div');
             sectorDiv.className = 'sector-box';
-            // Offset espacial basado en las coordenadas mínimas para evitar valores negativos en CSS Grid
             sectorDiv.style.gridColumn = sector.x - minX + 1;
             sectorDiv.style.gridRow = sector.y - minY + 1;
 
@@ -270,7 +268,7 @@ export class SeatsController {
                     seatDiv.textContent = seat.seatNumber;
 
                     seatDiv.title = `Sector: ${sector.name} | Fila: ${seat.rowIdentifier} | Asiento: ${seat.seatNumber} | Precio: $${seat.price}`;
-
+                    
                     seatsContainer.appendChild(seatDiv);
                 });
 
@@ -307,7 +305,6 @@ export class SeatsController {
         
         if (viewport) {
             viewport.addEventListener('wheel', (event) => {
-                // Evita que la página haga scroll vertical al hacer zoom
                 event.preventDefault(); 
                 this.pz.zoomWithWheel(event);
             }, { passive: false });
@@ -319,44 +316,35 @@ export class SeatsController {
         }, 100);
     }
 
-    async selectSeat(seatElement) {
-        // 1. Bloqueo inmediato de interacción para evitar doble clic
+    async selectSeat(seatElement, event) { // <-- Modificación: Añadir 'event'
         if (seatElement.classList.contains('loading-seat')) return;
         const user = apiService.getCurrentUser();
         const seatId = seatElement.dataset.seatId;
         const seatIndex = this.selectedSeats.findIndex(s => s.id === seatId);
 
         if (seatIndex > -1) {
-            // CASO: DESELECCIONAR (El usuario hizo clic en un asiento ya elegido)
             try {
-                const user = apiService.getCurrentUser();
-                
-                // Llamada al método que agregaste en api.js
                 await apiService.cancelReservation(user.id, seatId);
 
-                // Si el backend responde OK, actualizamos la UI
                 this.selectedSeats.splice(seatIndex, 1);
                 seatElement.classList.remove('selected');
                 seatElement.classList.add('available');
                 
                 this.updateSelectionDisplay();
-                this.checkTimerStatus(); // Nueva función para limpiar el timer si no hay asientos
+                this.checkTimerStatus();
             } 
             catch (error) {
                 console.error("Error al cancelar:", error);
-                alert("No se pudo liberar el asiento. Intente de nuevo.");
-                showErrorModal("El asiento ya ha sido reservado por otro usuario: " + error.message);
+                this.showErrorModal("No se pudo liberar el asiento. Intente de nuevo.");
             }
         } 
         else {
-            // Lógica de selección y reserva
             if (this.selectedSeats.length >= 6) {
-                showAlert("Máximo 6 entradas por persona", "warning");
+                this.showErrorModal("Máximo 6 entradas por persona", "warning");
                 return;
             }
 
             try {
-                // FEEDBACK VISUAL INMEDIATO
                 seatElement.classList.remove('available');
                 seatElement.classList.add('loading-seat');
                 
@@ -367,7 +355,6 @@ export class SeatsController {
                     seatData.expiresAt = response.expiresAt; 
                     this.selectedSeats.push(seatData);
                     
-                    // ACTUALIZACIÓN DE UI SIN RECARGAR
                     seatElement.classList.remove('loading-seat');
                     seatElement.classList.add('selected');
                     if (this.reservationTimer === null) {
@@ -375,21 +362,31 @@ export class SeatsController {
                     }
                     
                     this.updateSelectionDisplay();
-                    
                 }
             } 
             catch (error) {
-                // REVERTIR CAMBIOS SI FALLA
                 seatElement.classList.remove('loading-seat');
                 seatElement.classList.add('reserved');
-                this.showErrorModal(error.message || 'No se pudo reservar el asiento. Intenta nuevamente.');
+                this.notifyReservedSeat(event); 
             }
         }
+    }
+    async notifyReservedSeat(event) {
+        const warning = document.getElementById('seat-warning');
+        warning.style.left = `${event.clientX + 15}px`;
+        warning.style.top = `${event.clientY + 15}px`;
+        
+        warning.classList.remove('warning-hidden');
+        warning.classList.add('warning-visible');
+
+        setTimeout(() => {
+            warning.classList.remove('warning-visible');
+            warning.classList.add('warning-hidden');
+        }, 3000);
     }
     startCountdown(expirationTimestamp) {
         if (this.reservationTimer) clearInterval(this.reservationTimer);
 
-        // Asegurar que el string se trate como UTC agregando 'Z' si falta
         let dateStr = expirationTimestamp;
         if (typeof dateStr === 'string' && !dateStr.includes('Z') && !dateStr.includes('+')) {
             dateStr += 'Z';
@@ -398,9 +395,8 @@ export class SeatsController {
         let expirationDate = new Date(dateStr).getTime();
         const now = new Date().getTime();
 
-        // Si la fecha es inválida o el desfasaje es ilógico (ej. más de 24hs), usar 5 min locales
         if (isNaN(expirationDate) || Math.abs(expirationDate - now) > 86400000) {
-            expirationDate = now + (5 * 60 * 1000);
+            expirationDate = now + (5 * 60 * 1000); // 
         }
 
         const update = () => {
@@ -416,9 +412,10 @@ export class SeatsController {
             this.updateTimerUI(distance);
         };
 
-        update(); // Ejecución inmediata
+        update();
         this.reservationTimer = setInterval(update, 1000);
     }
+
     updateTimerUI(distance) {
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
@@ -429,8 +426,8 @@ export class SeatsController {
             timerEl.classList.toggle('timer-warning', minutes < 1);
         }
     }
+
     checkTimerStatus() {
-        // Si no quedan asientos seleccionados, detenemos y limpiamos el timer
         if (this.selectedSeats.length === 0 && this.reservationTimer) {
             clearInterval(this.reservationTimer);
             this.reservationTimer = null;
@@ -441,27 +438,18 @@ export class SeatsController {
             }
         }
     }
+
     handleExpiration() {
         this.showErrorModal("El tiempo de reserva ha expirado. Los asientos seleccionados han sido liberados.");
-        
-        // Liberar asientos localmente mediante manipulación del DOM (sin recargar)
-        this.selectedSeats.forEach(seat => {
-            const seatElement = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
-            if (seatElement) {
-                seatElement.classList.remove('selected');
-                seatElement.classList.add('available');
+        setTimeout(() => {
+            const errorModal = document.getElementById('purchaseErrorModal');
+            if (errorModal) {
+                errorModal.style.display = 'none';
             }
-        });
-        
-        this.selectedSeats = [];
-        this.updateSelectionDisplay();
-        
-        const timerEl = document.getElementById('reservationTimer');
-        if (timerEl) {
-            timerEl.textContent = '';
-            timerEl.classList.remove('timer-warning');
-        }
+            this.router.navigate('events');
+        }, 3000);
     }
+    
     clearSeatSelection() {
         const selected = document.querySelector('.seat.selected');
         if (selected) selected.classList.remove('selected');
@@ -490,7 +478,6 @@ export class SeatsController {
                 </div>
             `).join('');
 
-            // Asignar eventos a los botones recién creados
             document.querySelectorAll('.remove-seat-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const seatId = e.currentTarget.dataset.seatId;
@@ -502,25 +489,22 @@ export class SeatsController {
             totalPriceEl.textContent = `$ ${total.toLocaleString('es-AR')}`;
             
             buyBtn.disabled = false;
-            buyBtn.textContent = `COMPRAR (${this.selectedSeats.length})`;
+            buyBtn.textContent = `CONTINUAR (${this.selectedSeats.length})`;
             buyBtn.onclick = () => this.goToPayment(); 
         } else {
-            // Estado vacío
             selectedSeatsDisplay.innerHTML = '<p style="text-align:center; color:#6c757d;">No hay asientos seleccionados.</p>';
             totalPriceEl.textContent = '$ 0';
             buyBtn.disabled = true;
-            buyBtn.textContent = 'COMPRAR';
+            buyBtn.textContent = 'CONTINUAR';
         }
     }
+
     removeSeatFromList(seatId) {
-        // Buscar el div del asiento en el mapa usando el atributo data
         const seatElement = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
         
         if (seatElement) {
-            // Al pasarle el elemento a tu método selectSeat, este detecta el index > -1 y hace la deselección
             this.selectSeat(seatElement);
         } else {
-            // Fallback: Si no encuentra el elemento en el DOM, lo saca del array de todas formas
             const seatIndex = this.selectedSeats.findIndex(s => s.id.toString() === seatId.toString());
             if (seatIndex > -1) {
                 this.selectedSeats.splice(seatIndex, 1);
@@ -532,87 +516,38 @@ export class SeatsController {
     async goToPayment() {
         if (this.selectedSeats.length === 0) return;
 
-        const user = apiService.getCurrentUser();
-        const seatIds = this.selectedSeats.map(seat => seat.id);
-        const buyBtn = document.getElementById('buyBtn');
-
-        try {
-            // Deshabilitar botón durante la transacción
-            buyBtn.disabled = true;
-            buyBtn.textContent = 'PROCESANDO...';
-
-            // Llamada al backend
-            debugger;
-            const response = await apiService.buySeats(user.id, seatIds);
-
-            // Detener el temporizador de expiración
-            if (this.reservationTimer) {
-                clearInterval(this.reservationTimer);
-                document.getElementById('reservationTimer').textContent = '';
-            }
-
-            // Mostrar modal de éxito con detalles de la compra
-            this.showSuccessModal(response);
-
-            // Limpiar selección
-            this.selectedSeats = [];
-            this.updateSelectionDisplay();
-
-        } catch (error) {
-            console.error('Error en la compra:', error);
-            
-            // Mostrar modal de error (el backend ya está manejando el error)
-            this.showErrorModal(error.message || 'Ha ocurrido un error al procesar tu compra. Intenta nuevamente.');
-            
-            // Restaurar botón si falla
-            buyBtn.disabled = false;
-            buyBtn.textContent = `COMPRAR (${this.selectedSeats.length})`;
-            
-            // Si el error es por expiración, recargar mapa
-            if (error.message.toLowerCase().includes("expirad")) {
-                this.handleExpiration();
-            }
+        sessionStorage.setItem('CHECKOUT_SEATS', JSON.stringify(this.selectedSeats));
+        
+        if (this.selectedSeats.length > 0) {
+            sessionStorage.setItem('CHECKOUT_EXPIRES', JSON.stringify(this.selectedSeats[0].expiresAt));
         }
+
+        window.removeEventListener('beforeunload', this.handleBeforeUnload);
+        this.router.navigate('checkout');
     }
 
-    showSuccessModal(response) {
-        const modal = document.getElementById('purchaseSuccessModal');
-        if (!modal) return;
-
-        const reservationDetails = document.getElementById('reservationDetails');
-        
-        // Construir detalles de la compra
-        let detailsHtml = '<div class="details-box">';
-        
-        if (response.bookingIds && response.bookingIds.length > 0) {
-            detailsHtml += `<p><strong>Número(s) de Reserva:</strong> ${response.bookingIds.join(', ')}</p>`;
-        }
-        
-        if (this.selectedSeats && this.selectedSeats.length > 0) {
-            detailsHtml += '<p><strong>Asientos:</strong></p><ul>';
-            this.selectedSeats.forEach(seat => {
-                detailsHtml += `<li>${seat.sectorName} - Fila ${seat.rowIdentifier} - Asiento ${seat.seatNumber}</li>`;
-            });
-            detailsHtml += '</ul>';
-        }
-        
-        if (response.totalAmount !== undefined) {
-            detailsHtml += `<p><strong>Monto Total:</strong> $${response.totalAmount.toLocaleString('es-AR')}</p>`;
-        }
-        
-        detailsHtml += '</div>';
-        
-        if (reservationDetails) {
-            reservationDetails.innerHTML = detailsHtml;
-        }
-
-        // Mostrar el modal
-        modal.style.display = 'flex';
+    async releaseAllSelectedSeats() {
+        if (this.selectedSeats.length === 0) return;
+    
+        const user = apiService.getCurrentUser();
+        if (!user) return;
+    
+        const cancelPromises = this.selectedSeats.map(seat => 
+            apiService.cancelReservation(user.id, seat.id).catch(err => console.error(err))
+        );
+    
+        await Promise.all(cancelPromises);
+        this.selectedSeats = [];
     }
 
     showErrorModal(errorMessage) {
         const modal = document.getElementById('purchaseErrorModal');
         if (!modal) return;
+
+        const headerEl = modal.querySelector('h2');
+        if (headerEl) {
+            headerEl.textContent = '✗ Error de Reserva';
+        }
 
         const errorMessageEl = document.getElementById('errorMessage');
         if (errorMessageEl) {
@@ -620,20 +555,5 @@ export class SeatsController {
         }
 
         modal.style.display = 'flex';
-    }
-
-    closeAllModals() {
-        const modals = [
-            'purchaseSuccessModal',
-            'purchaseErrorModal',
-            'loginModal'
-        ];
-
-        modals.forEach(modalId => {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        });
     }
 }
