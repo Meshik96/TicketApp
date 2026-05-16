@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TicketApp - Checkout</title>
+        <link rel="stylesheet" href="CSS/styles.css" />
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="app-header">
+                <a href="events.html" class="header-content" style="text-decoration: none; color: inherit; display: block;">
+                    🎫TicketApp
+                </a>
+                <div class="header-actions">
+                    <div class="user-menu-container">
+                        <button id="userMenuBtn" class="btn-menu">
+                            <i class="fas fa-ellipsis-v"></i> 
+                            <span class="dots-icon">&#8942;</span> 
+                        </button>
+                        <div id="userDropdown" class="dropdown-content">
+                            <div class="user-info-header">
+                                <span id="userNameDisplay">Usuario</span>
+                            </div>
+                            <a href="#" id="reservationsLink">Mis Entradas</a>
+                            <a href="#" id="settingsLink">Configuración</a>
+                            <hr>
+                            <a href="#" id="logoutBtn" class="logout-link">Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content checkout-main">
+                <!-- Order Summary Section -->
+                <section class="checkout-section">
+                    <div class="checkout-header">
+                        <h2>Resumen de Compra</h2>
+                    </div>
+
+                    <div class="order-summary">
+                        <!-- Event Details -->
+                        <div class="order-card">
+                            <div class="card-header">Evento</div>
+                            <div class="card-body">
+                                <div class="event-detail-row">
+                                    <span class="label">Nombre:</span>
+                                    <span class="value" id="summaryEventName">-</span>
+                                </div>
+                                <div class="event-detail-row">
+                                    <span class="label">Fecha:</span>
+                                    <span class="value" id="summaryEventDate">-</span>
+                                </div>
+                                <div class="event-detail-row">
+                                    <span class="label">Lugar:</span>
+                                    <span class="value" id="summaryEventVenue">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seats Summary -->
+                        <div class="order-card">
+                            <div class="card-header">Asientos</div>
+                            <div class="card-body">
+                                <div id="seatsSummaryList" class="seats-summary-list">
+                                    <!-- Seats will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pricing Summary -->
+                        <div class="order-card pricing-card">
+                            <div class="card-header">Detalles de Precio</div>
+                            <div class="card-body">
+                                <div class="price-row total">
+                                    <span class="label">Total:</span>
+                                    <span class="value total-amount" id="summaryTotal">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timer Warning -->
+                        <div class="timer-warning-box">
+                            <div class="timer-icon">⏱️</div>
+                            <div class="timer-text">
+                                <p class="timer-label">Tiempo disponible para completar compra:</p>
+                                <p class="timer-value" id="checkoutTimer">5:00</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Checkout Form Section -->
+                <section class="checkout-section form-section">
+                    <div class="checkout-header">
+                        <h2>Información de Comprador</h2>
+                    </div>
+
+                    <form id="checkoutForm" class="checkout-form">
+                        <div class="form-group">
+                            <label for="buyerFirstName">Nombre</label>
+                            <input type="text" id="buyerFirstName" name="firstName" placeholder="Ej: Juan">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="buyerLastName">Apellido</label>
+                            <input type="text" id="buyerLastName" name="lastName" placeholder="Ej: Pérez">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="buyerEmail">Email</label>
+                            <input type="email" id="buyerEmail" name="email" placeholder="ejemplo@correo.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="buyerPhone">Teléfono</label>
+                            <input type="tel" id="buyerPhone" name="phone" placeholder="+54 9 123 456-7890">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="buyerDocument">DNI/Documento</label>
+                            <input type="text" id="buyerDocument" name="document" placeholder="Ej: 12345678">
+                        </div>
+
+                        <div class="form-divider"></div>
+
+                        <div class="payment-section">
+                            <h3>Datos de Pago</h3>
+                            
+                            <div class="form-group">
+                                <label for="cardName">Titular de la Tarjeta</label>
+                                <input type="text" id="cardName" name="cardName" placeholder="Nombre como aparece en la tarjeta">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cardNumber">Número de Tarjeta</label>
+                                <input type="text" id="cardNumber" name="cardNumber" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="cardExpiry">Vencimiento</label>
+                                    <input type="text" id="cardExpiry" name="cardExpiry" placeholder="MM/AA" maxlength="5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cardCVV">CVV</label>
+                                    <input type="text" id="cardCVV" name="cardCVV" placeholder="123" maxlength="4">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cardZip">Código Postal</label>
+                                <input type="text" id="cardZip" name="cardZip" placeholder="1234">
+                            </div>
+                        </div>
+
+                        <div id="checkoutError" class="error-message" style="display: none;"></div>
+
+                        <div class="checkout-actions">
+                            <button type="button" id="backToSeatsBtn" class="btn btn-secondary">
+                                ← Volver a Asientos
+                            </button>
+                            <button type="submit" id="payBtn" class="btn-pay">
+                                PAGAR AHORA
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </main>
+        </div>
+
+        <!-- Purchase Success Modal -->
+        <div id="purchaseSuccessModal" class="modal" style="display: none;">
+            <div class="modal-content modal-success">
+                <div class="modal-header">
+                    <h2>✓ ¡Compra Exitosa!</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="successMessage" class="success-message-text">Tu compra ha sido procesada correctamente.</p>
+                    <div id="reservationDetails" class="reservation-details"></div>
+                </div>
+                <div class="modal-footer modal-footer-multi">
+                    <button id="backToEventsBtn" class="btn btn-secondary">
+                        Volver a Eventos
+                    </button>
+                    <button id="continueShoppingBtn" class="btn btn-primary">
+                        Seguir Comprando
+                    </button>
+                    <button id="viewReservationsBtn" class="btn btn-success">
+                        Ver Mis Reservas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchase Error Modal -->
+        <div id="purchaseErrorModal" class="modal" style="display: none;">
+            <div class="modal-content modal-error">
+                <div class="modal-header modal-header-error">
+                    <h2>✗ Error en la Compra</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage" class="error-message-text">Ha ocurrido un error al procesar tu compra.</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="closeErrorBtn" class="btn btn-primary">
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="JS/app.js"></script>
+    </body>
+</html>
