@@ -58,6 +58,7 @@ export class EventsController {
         }
         const openLoginMenuBtn = document.getElementById('openLoginMenuBtn');
         const logoutBtn = document.getElementById('logoutBtn');
+        const reservationsLink = document.getElementById('reservationsLink');
 
         if (openLoginMenuBtn) {
             openLoginMenuBtn.addEventListener('click', (e) => {
@@ -75,6 +76,14 @@ export class EventsController {
                 sessionStorage.removeItem(STORAGE_KEYS.USER);
                 dropdown.classList.remove('show'); // Cierra el menú
                 this.updateUserDisplay(); // Actualiza la UI a estado desloggeado
+            });
+        }
+
+        if (reservationsLink) {
+            reservationsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (dropdown) dropdown.classList.remove('show');
+                this.router.navigate('reservations');
             });
         }
         this.updateUserDisplay();

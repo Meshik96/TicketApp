@@ -49,14 +49,19 @@ namespace Infrastructure.Data
             // Relación Seat -> Reservation (1:1)
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.Seat)
-                .WithOne(s => s.Reservation)
-                .HasForeignKey<Reservation>(r => r.SeatId);
+                .WithMany(s => s.Reservations) // Cambiado de WithOne a WithMany
+                .HasForeignKey(r => r.SeatId);
 
             // Relación User -> Reservation (1:N)
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Reservations)
                 .HasForeignKey(r => r.UserId);
+
+            modelBuilder.Entity<Reservation>()
+                .HasIndex(r => r.SeatId)
+                .IsUnique()
+                .HasFilter("[Status] = 'Active'");
 
             // Relación User -> AuditLog (1:N)
             modelBuilder.Entity<AuditLog>()

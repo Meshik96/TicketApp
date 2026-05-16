@@ -34,12 +34,21 @@ public class ReservationService : IReservationService
 
         return true;
     }
-    public async Task DeleteReservationAsync(int userId,Guid seatId)
+    public async Task DeleteReservationAsync(int userId, Guid seatId)
     {
         var reservation = await _reservationQueries.GetReservationAsync(userId, seatId);
-        if (reservation != null)
+
+        // Validar existencia y estado de la reserva
+        if (reservation == null || reservation.Status != "Pending")
         {
-            await _reservationCommands.DeleteReservationAsync(reservation.ReservationId);
+            throw new InvalidOperationException("No se encontró una reserva activa para cancelar.");
         }
+
+        await _reservationCommands.DeleteReservationAsync(reservation.ReservationId);
+    }
+    public async Task<List<UserReservationResponse>> GetUserReservationsAsync(int userId)
+    {
+        // Aquí puede agregar lógica de validación adicional si fuera necesario
+        return await _reservationQueries.GetUserReservationsAsync(userId);
     }
 }

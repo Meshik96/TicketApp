@@ -15,51 +15,76 @@ namespace Infrastructure.Persistence.Seats
         }
         public async Task ConfirmSeatsPurchaseAsync(int userId, List<Guid> seatIds)
         {
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            if (seatIds == null || !seatIds.Any())
+                throw new InvalidOperationException("No se enviaron asientos para procesar.");
+
+            try
             {
-                try
+                var pendingReservations = await _context.Reservations
+                    .Where(r => seatIds.Contains(r.SeatId)
+                             && r.UserId == userId
+                             && r.Status == "Pending")
+                    .ToListAsync();
+
+                if (pendingReservations.Count != seatIds.Count)
                 {
-                    // Cambiar estado de los asientos a "Sold"
-                    var seats = await _context.Seats
-                        .Where(s => seatIds.Contains(s.Id))
-                        .Include(s => s.Sector)
-                        .Include(r => r.Reservation)
-                        .ToListAsync();
-                    foreach (var seat in seats)
+                    throw new InvalidOperationException("La reserva ha expirado. Por favor, selecciona tus asientos nuevamente.");
+                }
+
+                var seats = await _context.Seats
+                    .Where(s => seatIds.Contains(s.Id))
+                    .ToListAsync();
+
+                var auditLogs = new List<AuditLog>();
+
+                foreach (var seat in seats)
+                {
+                    seat.Status = "Sold";
+                    seat.Version++;
+
+                    var reservation = pendingReservations.First(r => r.SeatId == seat.Id);
+                    reservation.Status = "Paid";
+
+                    auditLogs.Add(new AuditLog
                     {
-                        seat.Status = "Sold";
-
-                        // Cambiar estado de la reserva a "Paid" en lugar de eliminarla
-                        if (seat.Reservation != null)
-                        {
-                            seat.Reservation.Status = "Paid";
-                        }
-
-                        var auditLog = new AuditLog
-                        {
-                            Id = Guid.NewGuid(),
-                            UserId = userId,
-                            SeatId = seat.Id,
-                            ReservationId = seat.Reservation?.Id,
-                            Action = "BUY_SEAT",
-                            Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber} in Sector {seat.SectorId} in event {seat.Sector.EventId} bought by User {userId}",
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        _context.AuditLogs.Add(auditLog);
-                    }
-                    _context.Seats.UpdateRange(seats);
-                    // Aquí podrías agregar lógica para insertar registros en una tabla de Ventas/Tickets
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        SeatId = seat.Id,
+                        ReservationId = reservation.Id,
+                        Action = "BUY_SEAT_SUCCESS",
+                        Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber} in Sector {seat.SectorId} bought by User {userId}",
+                        CreatedAt = DateTime.UtcNow
+                    });
                 }
-                catch
+
+                _context.Seats.UpdateRange(seats);
+                _context.Reservations.UpdateRange(pendingReservations);
+                await _context.AuditLogs.AddRangeAsync(auditLogs);
+
+                // La transacción implícita se maneja aquí
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Limpiar el estado del contexto actual
+                _context.ChangeTracker.Clear();
+
+                var errorLog = new AuditLog
                 {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Action = "BUY_SEAT_ERROR",
+                    Details = $"Error confirmando compra: {ex.Message}",
+                    CreatedAt = DateTime.UtcNow
+                };
 
+                await _context.AuditLogs.AddAsync(errorLog);
+                await _context.SaveChangesAsync();
+
+                throw;
             }
         }
+
         public async Task DeleteExpiredReservationsAsync()
         {
             var now = DateTime.UtcNow;

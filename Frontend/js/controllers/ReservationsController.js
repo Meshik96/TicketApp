@@ -137,13 +137,6 @@ export class ReservationsController {
                         <span class="detail-value">${this.formatSeats(group.seats)}</span>
                     </div>
                     
-                    ${group.event.bookingId ? `
-                    <div class="detail-row">
-                        <span class="detail-label">🎫 Número de Reserva:</span>
-                        <span class="detail-value booking-id">${escapeHtml(group.event.bookingId)}</span>
-                    </div>
-                    ` : ''}
-                    
                     ${group.event.totalPrice ? `
                     <div class="detail-row">
                         <span class="detail-label">💵 Total:</span>
@@ -154,7 +147,7 @@ export class ReservationsController {
                 
                 <div class="reservation-actions">
                     <button class="btn btn-secondary" onclick="alert('Descarga de entrada no implementada aún')">
-                        Descargar Entrada
+                        Descargar Entradas
                     </button>
                 </div>
             </div>

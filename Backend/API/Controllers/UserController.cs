@@ -1,5 +1,6 @@
 using Application.DTOs.Users;
 using Application.Interfaces.Services;
+using Application.Services.Reservations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -9,10 +10,12 @@ namespace API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IReservationService _reservationService;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IReservationService reservationService)
         {
             _userService = userService;
+            _reservationService = reservationService;
         }
 
         /// <summary>
@@ -130,6 +133,20 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+            }
+        }
+
+        [HttpGet("{userId}/reservations")]
+        public async Task<IActionResult> GetUserReservations(int userId)
+        {
+            try
+            {
+                var reservations = await _reservationService.GetUserReservationsAsync(userId);
+                return Ok(new { reservations });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error al obtener las reservas", details = ex.Message });
             }
         }
     }

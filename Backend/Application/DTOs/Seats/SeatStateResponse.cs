@@ -11,6 +11,6 @@ public class SeatStateResponse
     public decimal Price { get; set; }
     public int SectorGridX { get; set; }
     public int SectorGridY { get; set; }
-    public int UserId { get; set; } = 0;
-    public DateTime ExpiresAt { get; set; }
+    public int? UserId { get; set; } = 0;
+    public DateTime? ExpiresAt { get; set; }
 }

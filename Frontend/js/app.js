@@ -3,6 +3,7 @@ import { LoginController } from './controllers/LoginController.js';
 import { EventsController } from './controllers/EventsController.js';
 import { SeatsController } from './controllers/SeatsController.js';
 import { ReservationsController } from './controllers/ReservationsController.js';
+import { CheckoutController } from './controllers/CheckoutController.js';
 import { closeModals } from './utils/helpers.js';
 import { apiService } from './api.js';
 import { STORAGE_KEYS } from './utils/constants.js';
@@ -52,6 +53,13 @@ class AppRouter {
             } else {
                 window.location.href = 'events.html';
             }
+        } else if (path.includes('checkout.html')) {
+            if (!user) {
+                // Si intenta entrar a checkout.html sin sesión, enviar a events.html
+                window.location.href = 'events.html';
+                return;
+            }
+            this.navigate('checkout');
         } else if (path.includes('reservations.html')) {
             if (!user) {
                 // Si intenta entrar a reservations.html sin sesión, enviar a events.html
@@ -67,8 +75,8 @@ class AppRouter {
     navigate(route, params = {}) {
         const user = sessionStorage.getItem(STORAGE_KEYS.USER);
         
-        // Quitar 'events' de la validación. Solo 'seats' y 'reservations' requieren autenticación.
-        if ((route === 'seats' || route === 'reservations') && !user) {
+        // Quitar 'events' de la validación. Solo 'seats', 'checkout' y 'reservations' requieren autenticación.
+        if ((route === 'seats' || route === 'checkout' || route === 'reservations') && !user) {
             if (!this.loginController) {
                 this.loginController = new LoginController(this);
             }
@@ -89,6 +97,13 @@ class AppRouter {
                     window.location.href = 'seats.html';
                 } else {
                     new SeatsController(this, params.eventId);
+                }
+                break;
+            case 'checkout':
+                if (!window.location.pathname.includes('checkout.html')) {
+                    window.location.href = 'checkout.html';
+                } else {
+                    new CheckoutController(this);
                 }
                 break;
             case 'reservations':
