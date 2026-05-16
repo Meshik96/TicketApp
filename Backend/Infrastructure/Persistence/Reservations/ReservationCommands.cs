@@ -61,9 +61,19 @@ public class ReservationCommands : IReservationCommands
             if (!userExists)
                 throw new KeyNotFoundException("User not found");
 
+            var eventId = seat.Sector.EventId;
+            var existingExpirationTime = await _context.Reservations
+                .Where(r => r.UserId == userId
+                         && r.Seat.Sector.EventId == eventId
+                         && r.Status == "Pending"
+                         && r.ExpiresAt > DateTime.UtcNow)
+                .Select(r => (DateTime?)r.ExpiresAt)
+                .FirstOrDefaultAsync();
+            DateTime expirationDate = existingExpirationTime ?? DateTime.UtcNow.AddMinutes(5);
+
             seat.Status = "Reserved";
             seat.Version++;
-
+            
             var reservation = new Reservation
             {
                 Id = Guid.NewGuid(),
@@ -71,7 +81,7 @@ public class ReservationCommands : IReservationCommands
                 SeatId = seatId,
                 Status = "Pending",
                 ReservedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(5)
+                ExpiresAt = expirationDate
             };
 
             await _context.Reservations.AddAsync(reservation);
@@ -93,7 +103,7 @@ public class ReservationCommands : IReservationCommands
             return new ReservationResponse
             {
                 ReservationId = reservation.Id,
-                SeatStatus = "Reserved"
+                Status = "Reserved"
             };
         }
         catch (DbUpdateConcurrencyException)
@@ -140,7 +150,7 @@ public class ReservationCommands : IReservationCommands
             Id = Guid.NewGuid(),
             UserId = reservation.UserId,
             SeatId = reservation.SeatId,
-            ReservationId = null,
+            ReservationId = reservation.Id,
             Action = "REMOVE_SEAT_RESERVATION",
             Details = $"Seat {seat.RowIdentifier}{seat.SeatNumber}, Sector: {seat.SectorId}, Event: {seat.Sector.EventId} released manually by User: {reservation.UserId}",
             CreatedAt = DateTime.UtcNow
@@ -152,9 +162,13 @@ public class ReservationCommands : IReservationCommands
             seat.Version++;
         }
 
-        _context.Reservations.Remove(reservation);
-        
-       
+        await _context.Reservations
+            .Where(r => r.Id == reservationId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(r => r.Status, "Expired")
+                .SetProperty(r => r.ExpiresAt, DateTime.UtcNow));
+
+
         await _context.SaveChangesAsync();
     }
 }

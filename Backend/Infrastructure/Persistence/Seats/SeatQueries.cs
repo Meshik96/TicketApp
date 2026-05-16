@@ -20,26 +20,34 @@ public class SeatQueries : ISeatQueries
             .AsNoTracking()
             .Where(s => s.Sector.EventId == eventId)
             .Include(s => s.Sector)
-            .Include(s => s.Reservation)
+            .Include(s => s.Reservations)
             .OrderBy(s => s.Sector.Id)
             .ThenBy(s => s.RowIdentifier)
             .ThenBy(s => s.SeatNumber)
-            .Select(s => new SeatStateResponse
+            .ToListAsync();
+
+        var result = seats.Select(s => 
+        {
+            var activeReservation = s.Reservations
+                .Where(r => r.Status == "Pending")
+                .FirstOrDefault();
+
+            return new SeatStateResponse
             {
                 Id = s.Id,
                 SectorId = s.SectorId,
                 SectorName = s.Sector.Name,
-                UserId = s.Reservation != null ? s.Reservation.UserId : 0,
-                ExpiresAt = s.Reservation != null ? s.Reservation.ExpiresAt : DateTime.MinValue,
+                UserId = activeReservation?.UserId ?? 0,
+                ExpiresAt = activeReservation?.ExpiresAt ?? DateTime.MinValue,
                 RowIdentifier = s.RowIdentifier,
                 SeatNumber = s.SeatNumber,
                 Status = s.Status,
                 Price = s.Sector.Price,
                 SectorGridX = s.Sector.GridX,
                 SectorGridY = s.Sector.GridY
-            })
-            .ToListAsync();
+            };
+        }).ToList();
 
-        return seats;
+        return result;
     }
 }

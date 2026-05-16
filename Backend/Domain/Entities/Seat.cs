@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
 namespace Domain.Entities
@@ -19,7 +20,7 @@ namespace Domain.Entities
 
         // Navigation properties
         public Sector Sector { get; set; } = null!;
-        public Reservation? Reservation { get; set; }
+        public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
         public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
     }
 }
